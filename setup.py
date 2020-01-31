@@ -14,7 +14,7 @@ from distutils.core import setup
 
 name = 'myfiles'
 description = """
-My personnal module to manage data file names.
+My personal module to manage data file names.
 """
 author = 'Gabriel Antonius'
 license = 'All rights reserved (but who cares, really...)'
