@@ -2,9 +2,8 @@ import os
 from copy import copy
 
 import __main__ as main
-#print(main.__file__)
 
-__all__ = ['get_ids', 'read_ids', 'ids_match']
+__all__ = ['get_ids', 'read_ids', 'ids_match', 'get_tag', 'read_tag']
 
 home = os.path.realpath(os.environ['HOME'])
 
@@ -103,5 +102,57 @@ def ids_match(ids1, ids2):
         if i != j:
             return False
     return True
-             
 
+
+
+def get_tag(fname=_main_default_fname):
+    fullpath = os.path.realpath(fname)
+    fullpath = fullpath.split(home)[-1]
+    rest,  last = os.path.split(fullpath)
+    tag = read_tag(last)
+    return tag
+
+
+
+def read_tag(fname, sep='-'):
+    """
+    Strip numbers ids out of a file name to return literal part.
+    Example:
+
+        read_tag('plot-100-20-spectral-function.py')
+        >>> 'spectral-function'
+    """
+    basename = os.path.splitext(fname)[0]
+    words = []
+    phrases = []
+    for tok in basename.split(sep):
+        if tok.isdigit():
+            if not phrases:
+                phrases.append([])
+            elif phrases[-1]:
+                phrases.append([])
+        else:
+            words.append(tok)
+            if not phrases:
+                phrases.append([])
+            words.append(tok)
+            phrases[-1].append(tok)
+
+    if len(phrases) < 2:
+        return sep.join(phrases[0])
+
+    # Checke the first word and try to classify file
+    if len(phrases[0]) == 1:
+        if phrases[0][0] in ('plot', 'data'):
+            del phrases[0][0]
+
+    if phrases:
+        if not phrases[0]:
+            del phrases[0]
+
+    # Now construct the tag
+    if len(phrases) < 2:
+        return sep.join(phrases[0])
+
+    # Just concatenate everything
+    return sep.join([sep.join(p) for p in phrases])
