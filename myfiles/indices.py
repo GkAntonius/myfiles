@@ -3,7 +3,9 @@ from copy import copy
 
 import __main__ as main
 
-__all__ = ['get_ids', 'read_ids', 'ids_match', 'get_tag', 'read_tag']
+__all__ = ['get_ids', 'read_ids', 'read_path_ids', 'ids_match',
+           'get_tag', 'read_tag', 'trim_ids', 'ids_startswith',
+            ]
 
 home = os.path.realpath(os.environ['HOME'])
 
@@ -26,34 +28,10 @@ def get_ids(fname=_main_default_fname, n=None, rev=False):
     rev: If True, return the indicies extracted from right to left.
     """
 
-    if n is None:
-        nmax = float('inf')
-    else:
-        nmax = n
-
     fullpath = os.path.realpath(fname)
     fullpath = fullpath.split(home)[-1]
 
-    ids = list()
-
-    rest = copy(fullpath)
-    i = 0
-    while True:
-        #i += 1
-        #rest,  last = os.path.split(rest)
-        #this_id = starting_or_ending_digit(last)
-        rest,  last = os.path.split(rest)
-        these_ids = read_ids(last)
-        ids.extend(reversed(these_ids))
-        #if len(ids) >= nmax:
-        #    ids = ids[:nmax]
-        #    break
-        if not rest or not last:
-            break
-        #if this_id == 0:
-        #    break
-
-        #ids.append(this_id)
+    ids = read_path_ids(fullpath)
 
     nids = len(ids)
 
@@ -64,7 +42,7 @@ def get_ids(fname=_main_default_fname, n=None, rev=False):
         import warnings
         warnings.warn('Found less than {} ids in file name:\n\t{}'.format(fullpath))
 
-    if not rev:
+    if rev:
         ids = list(reversed(ids))
 
     if n is not None:
@@ -94,11 +72,34 @@ def read_ids(fname, sep='-'):
             ids.append(int(tok))
     return ids
 
+def read_path_ids(fname, sep='-'):
+    """
+    Read the ids from a file path, (absolute or not).
+    Extend the indices with each directory.
+    """
+    ids = list()
+    rest = fname
+    while rest and rest != '/':
+        rest, last = os.path.split(rest)
+        ids_p = read_ids(last, sep=sep)
+        ids.extend(reversed(ids_p))
+    return list(reversed(ids))
+
 
 def ids_match(ids1, ids2):
     if len(ids1) != len(ids2):
         return False
     for i, j in zip(ids1, ids2):
+        if i != j:
+            return False
+    return True
+
+def ids_startswith(ids, start):
+    if len(start) > len(ids):
+        return False
+    ids = list(ids)
+    for i in start:
+        j = ids.pop(0)
         if i != j:
             return False
     return True
@@ -156,3 +157,18 @@ def read_tag(fname, sep='-'):
 
     # Just concatenate everything
     return sep.join([sep.join(p) for p in phrases])
+
+
+def trim_ids(ids, clip):
+    """
+    Pop the parents_ids from the start of ids.
+    trim([1,2,3], [1,2])
+    >>> [3]
+    """
+    trimmed_ids = list(ids)
+    for i in clip:
+        if i == trimmed_ids[0]:
+            trimmed_ids.pop(0)
+        else:
+            break
+    return trimmed_ids
