@@ -1,7 +1,14 @@
 import os
-from .indices import read_ids, read_path_ids, ids_match, trim_ids, ids_startswith
+from .indices import (
+    read_ids, read_path_ids, ids_match, trim_ids,
+    ids_startswith, ids_tail_match_head, ids_match_tail,
+    )
 
-__all__ = ['find_calc_dir', 'find_data_dir', 'find_data_fname', 'find_data_file', 'get_data_fname', 'get_data_file']
+__all__ = [
+    'find_calc_dir', 'find_data_dir', 'find_data_fname',
+    'find_data_file', 'get_data_fname', 'get_data_file',
+    'find_data_subdir',
+    ]
 
 def iter_subdir(topdir):
     for subdir in os.listdir(topdir):
@@ -92,15 +99,39 @@ def find_data_fname(ids, where='.', sep='-', prefix=None, tag=None,
         )
 
 
-
-
-
-
-
 # GKA: Cant seem to decide on a name...
 get_data_fname = find_data_fname
 find_data_file = find_data_fname
 get_data_file = find_data_fname
+
+
+
+def find_data_subdir(ids, where='.'):
+    """
+    Scan recursively a directory to find one directory whose sequence
+    matches ids. 
+    """
+    
+    for subdir in iter_subdir(where):
+        subdir_fullpath = os.path.join(where, subdir)
+
+        subdir_ids = read_ids(subdir)
+        subdir_path_ids = read_path_ids(subdir_fullpath)
+
+        if ids_match(ids, subdir_ids) or ids_match_tail(ids, subdir_path_ids):
+            return subdir_fullpath
+
+        elif ids_tail_match_head(subdir_path_ids, ids):
+            try:
+                return find_data_subdir(ids, where=subdir_fullpath)
+            except:
+                pass
+
+    raise Exception('could not find calculation directory.\n' +
+        'directory: {}\n'.format(where) +
+        'ids: {}\n'.format(ids)
+        )
+
 
 
 def find_calc_dir(ids, where=None):
@@ -127,7 +158,7 @@ def find_calc_dir(ids, where=None):
 
     if found < len(ids):
 
-        raise Exception('Could not find calculation directory.\n' +
+        raise Exception('could not find calculation directory.\n' +
             'directory: {}\n'.format(where) +
             'ids: {}\n'.format(ids)
             )

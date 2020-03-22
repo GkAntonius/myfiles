@@ -3,9 +3,11 @@ from copy import copy
 
 import __main__ as main
 
-__all__ = ['get_ids', 'read_ids', 'read_path_ids', 'ids_match',
-           'get_tag', 'read_tag', 'trim_ids', 'ids_startswith',
-            ]
+__all__ = [
+    'get_ids', 'read_ids', 'read_path_ids', 'ids_match',
+    'get_tag', 'read_tag', 'trim_ids', 'ids_startswith',
+    'ids_tail_match_head', 'ids_match_tail',
+    ]
 
 home = os.path.realpath(os.environ['HOME'])
 
@@ -93,6 +95,23 @@ def ids_match(ids1, ids2):
         if i != j:
             return False
     return True
+
+def ids_tail_match_head(scantail, scanhead):
+    """Does the ending sequence of 'scantail' match the start of 'scanhead' """
+    n = len(scanhead)
+    m = len(scantail)
+    for i in range(1, min(m,n)):
+        if ids_match(scantail[-i:], scanhead[:i]):
+            return True
+    return False
+
+def ids_match_tail(ids, scantail):
+    """Does the ending sequence of 'scantail' match the start of 'scanhead' """
+    n = len(ids)
+    m = len(scantail)
+    if m < n:
+        return False
+    return ids_match(ids, scantail[-n:])
 
 def ids_startswith(ids, start):
     if len(start) > len(ids):
