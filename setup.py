@@ -18,7 +18,7 @@ My personal module to manage data file names.
 """
 author = 'Gabriel Antonius'
 license = 'All rights reserved (but who cares, really...)'
-__version__ = '1.5.0'
+__version__ = '1.5.4'
 
 #---------------------------------------------------------------------------
 # Helper functions

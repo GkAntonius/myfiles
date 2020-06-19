@@ -44,11 +44,11 @@ def get_ids(fname=_main_default_fname, n=None, rev=False):
         import warnings
         warnings.warn('Found less than {} ids in file name:\n\t{}'.format(fullpath))
 
+    if n is not None:
+        ids = ids[-n:]
+
     if rev:
         ids = list(reversed(ids))
-
-    if n is not None:
-        ids = ids[:n]
 
     return ids
 
@@ -145,6 +145,9 @@ def read_tag(fname, sep='-'):
     basename = os.path.splitext(fname)[0]
     words = []
     phrases = []
+
+    # Here we allow for one sequence of indices to appear
+    # in the middle of the file name
     for tok in basename.split(sep):
         if tok.isdigit():
             if not phrases:
@@ -158,13 +161,14 @@ def read_tag(fname, sep='-'):
             words.append(tok)
             phrases[-1].append(tok)
 
-    if len(phrases) < 2:
-        return sep.join(phrases[0])
+    # No, we still want to scan a single phrase
+    #if len(phrases) < 2:
+    #    return sep.join(phrases[0])
 
     # Checke the first word and try to classify file
-    if len(phrases[0]) == 1:
-        if phrases[0][0] in ('plot', 'data'):
-            del phrases[0][0]
+    known_prefix = ('plot', 'data', 'run', 'flow',)
+    if phrases[0][0] in known_prefix:
+        del phrases[0][0]
 
     if phrases:
         if not phrases[0]:

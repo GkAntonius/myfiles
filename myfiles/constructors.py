@@ -1,7 +1,7 @@
 import os
 from .indices import get_ids
 
-__all__ = ['make_data_fname', 'make_plot_fname', 'make_dirname']
+__all__ = ['make_data_fname', 'make_plot_fname', 'make_dirname', 'make_data_dirname']
 
 def make_data_fname(ids, where='.', tag='', ext='.dat', prefix='data',
                     sep='-', rel=True, create=True):
@@ -51,10 +51,11 @@ def make_plot_fname(ids, where='.', tag='', ext='.pdf', prefix='plot',
 
 # FIXME: I should be able to specify format
 def make_dirname(ids, where='.', tag='', prefix='', sep='-', create=False):
-    dirname = make_data_fname(ids, where=where, tag=tag, ext='', prefix='prefix',
+    dirname = make_data_fname(ids, where=where, tag=tag, ext='', prefix='',
                     sep=sep, create=create)
     return dirname
 
+make_data_dirname = make_dirname
 
 
 # Mkdir -p functionality would be much easier with python 3
