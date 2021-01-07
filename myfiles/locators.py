@@ -17,6 +17,7 @@ def iter_subdir(topdir):
 
 
 def find_data_fname(ids, where='.', sep='-', prefix=None, tag=None,
+                    ext=None,
                     recursive=True,
                     ids_include_directory=False,
                     accumulate_ids=True,
@@ -57,6 +58,10 @@ def find_data_fname(ids, where='.', sep='-', prefix=None, tag=None,
 
         if prefix and not fname.startswith(prefix):
             continue
+
+        if ext is not None:
+            if not fname.endswith(ext):
+                continue
 
         fname_scan = fname.lstrip(prefix).lstrip(sep)
 
