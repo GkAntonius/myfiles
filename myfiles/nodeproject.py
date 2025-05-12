@@ -1,8 +1,9 @@
 
-from pathlib import path
+from pathlib import Path
 
 from .config import UserConfig, ProjectConfig
 
+__all__ = ['Project', 'Node', 'NodeID']
 
 class Project:
     path = '~/Projects/Someproject'
@@ -12,11 +13,11 @@ class Project:
     plots_path = 'Plots'
     data_path = 'Data'
 
-    def __init__(self, name, workdir, userconfig=None):
+    def __init__(self, name, workdir):
         self.name = name
         self.workdir = workdir
 
-    def from_path(cls, workdir=None, userconfig=None):
+    def from_path(cls, workdir=None):
         """
         Scan a path and try to figure out the top directory
         for this project.
@@ -134,11 +135,11 @@ class Node:
         """ 
         pass
 
-    def find_production_dir(self):
-        """
-        Use own ids, and possibly name to search for a production directory.
-        """ 
-        return self.find_subdir(where=
+    #def find_production_dir(self):
+    #    """
+    #    Use own ids, and possibly name to search for a production directory.
+    #    """ 
+    #    return self.find_subdir()
 
 # =========================================================================== #
 # Interface funtions

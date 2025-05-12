@@ -13,8 +13,11 @@ def print_user_config():
     print(rc)
 
 def print_project():
-    proj = Project.from_path(__file__)
-    print(proj)
+    try:
+        proj = Project.from_path(__file__)
+        print(proj)
+    except:
+        pass
 
 def print_node():
     node = Node.from_path(__file__)

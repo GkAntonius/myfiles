@@ -6,7 +6,7 @@ class UserConfig:
     user_defaults = {
         'Global': {
             'global_projects_dir' : '~/Projects/',
-            'global_scratch_dir', : '~/Scratch/',
+            'global_scratch_dir' : '~/Scratch/',
             'global_data_dir' : '~/Data',
             'global_pseudo_dir' : '~/Data/Pseudos',
             'global_structure_dir' : '~/Data/Structures',
@@ -30,6 +30,7 @@ class UserConfig:
             for key in self.sections[sk]:
                 setattr(self, key, self.sections[sk][key])
 
+    @classmethod
     def from_config_file(cls, fname=None):
         if fname is None:
             fname = Path('~/.myfilesrc')
@@ -37,13 +38,34 @@ class UserConfig:
         else:
             fname = Path(fname)
 
-        if not fname.exists():
-            raise Exception(str(fname) + " does not exist.")
+    @classmethod
+    def from_config_files(cls, fnames=None):
+        if fnames is None:
+            # Search for all configuration files in parent directories.
+            fnames = []
+            #for parent in (p/'sub').parents:
+            #print(parent)
+            #home = Path('~').expanduser()
+            #if parent.resolve() == home.resolve():
+            #    print('Found home')
+
+            home = Path('~').expanduser()
+            
+
+        elif isinstance(fnames, str):
+            fnames = [fnames]
+        else:
+            fnames = list(fnames)
+
+        #if not fname.exists():
+        #    raise Exception(str(fname) + " does not exist.")
 
         new = cls()
+        if not fnames:
+            return new
 
         config = configparser.ConfigParser()
-        config.read(fname)
+        config.read(fnames)
         for sk in self.sections:
             for key in self.sections[sk]:
                 setattr(new, key, config[sk][key])
@@ -76,6 +98,7 @@ class ProjectConfig(UserConfig):
             'name' : 'ProjectName',
             'topdir' : '~/Projects/ProjectName',
             },
+    }
 
     @property
     def sections(self):
