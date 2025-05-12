@@ -89,6 +89,7 @@ def read_path_ids(fname, sep='-'):
 
 
 def ids_match(ids1, ids2):
+    """True if sequences ids1 and ids2 are identical."""
     if len(ids1) != len(ids2):
         return False
     for i, j in zip(ids1, ids2):

@@ -3,7 +3,7 @@ import warnings
 
 home = os.path.realpath(os.environ['HOME'])
 
-_top_projects_dir_name = 'Work/Projects'
+_top_projects_dir_name = 'Projects'
 
 
 __all__ = ['FileButtler', 'fb', 'project_dir',

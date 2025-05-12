@@ -4,8 +4,7 @@ from __future__ import print_function
 import os
 import shutil
 
-from setuptools import find_packages #, setup
-from distutils.core import setup
+from setuptools import find_packages, setup
 
 
 #---------------------------------------------------------------------------
@@ -18,7 +17,7 @@ My personal module to manage data file names.
 """
 author = 'Gabriel Antonius'
 license = 'All rights reserved (but who cares, really...)'
-__version__ = '1.6.0'
+__version__ = '1.6.3'
 
 #---------------------------------------------------------------------------
 # Helper functions

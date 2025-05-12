@@ -21,6 +21,7 @@ def find_data_fname(ids, where='.', sep='-', prefix=None, tag=None,
                     recursive=True,
                     ids_include_directory=False,
                     accumulate_ids=True,
+                    data_dir=True,
                     ):
     """
     Search for a file with specific ids, within a certain directory.
@@ -50,7 +51,7 @@ def find_data_fname(ids, where='.', sep='-', prefix=None, tag=None,
     for fname in os.listdir(where):
         fname_fullpath = os.path.join(where, fname)
 
-        if os.path.isdir(fname_fullpath):
+        if os.path.isdir(fname_fullpath) and not data_dir:
             continue
 
         if tag and tag not in fname:
@@ -157,7 +158,10 @@ def find_calc_dir(ids, where=None):
         for subdir in os.listdir(topdir):
             idsub = read_ids(subdir)
             if idsub and idi == idsub[0]:
-                topdir = os.path.join(topdir, subdir)
+                path = os.path.join(topdir, subdir)
+                if not os.path.isdir(path):
+                    continue
+                topdir = path
                 found += 1
                 break
 
