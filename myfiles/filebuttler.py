@@ -6,8 +6,8 @@ home = os.path.realpath(os.environ['HOME'])
 _top_projects_dir_name = 'Projects'
 
 
-__all__ = ['FileButtler', 'fb', 'project_dir',
-           'data_dir', 'production_dir', 'pseudo_dir', 'pseudos_dir', 'structure_dir', 'structures_dir']
+#__all__ = ['FileButtler', 'project_dir',
+#           'data_dir', 'production_dir', 'pseudo_dir', 'pseudos_dir', 'structure_dir', 'structures_dir']
 
 
 def first_dir_after(path, top):
@@ -111,23 +111,23 @@ class FileButtler(object):
 """Execution                                                                """
 # =========================================================================== #
 
-try:
-    fb = FileButtler()
-    project_dir = fb.project_dir
-    data_dir = fb.data_dir
-    production_dir = fb.production_dir
-    pseudo_dir = fb.pseudo_dir
-    pseudos_dir = pseudo_dir  # Alias
-    structure_dir = fb.structure_dir
-    structures_dir = structure_dir  # Alias
-except Exception as e:
-    fb = None
-    project_dir = None
-    data_dir = None
-    production_dir = None
-    pseudo_dir = None
-    pseudos_dir = None
-    structure_dir = None
-    structures_dir = None
-    warnings.warn('File Buttler could not locate project directory\n' + str(e))
+#try:
+#    fb = FileButtler()
+#    project_dir = fb.project_dir
+#    data_dir = fb.data_dir
+#    production_dir = fb.production_dir
+#    pseudo_dir = fb.pseudo_dir
+#    pseudos_dir = pseudo_dir  # Alias
+#    structure_dir = fb.structure_dir
+#    structures_dir = structure_dir  # Alias
+#except Exception as e:
+#    fb = None
+#    project_dir = None
+#    data_dir = None
+#    production_dir = None
+#    pseudo_dir = None
+#    pseudos_dir = None
+#    structure_dir = None
+#    structures_dir = None
+#    warnings.warn('File Buttler could not locate project directory\n' + str(e))
 

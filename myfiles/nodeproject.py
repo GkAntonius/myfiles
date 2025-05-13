@@ -17,6 +17,7 @@ class Project:
         self.name = name
         self.workdir = workdir
 
+    @classmethod
     def from_path(cls, workdir=None):
         """
         Scan a path and try to figure out the top directory
@@ -50,16 +51,15 @@ class Project:
         pass
 
 
-class NodeID:
+class NodeID(list):
     """A sequence of digits identifying a node."""
-
     sep = '-'
 
     def __init__(self, ids: [int]):
-        self.ids = list(ids)
+        super().__init__(ids)
 
     def extend(self, ids:[int]):
-        self.ids.extend(ids)
+        super().extend(list(ids))
 
     def from_path(cls, path: str, n='*'):
         path = str(path)
@@ -77,20 +77,13 @@ class NodeID:
         """A node is empty if all its directories are empty."""
         return False
 
-    def __iter__(self):
-        return iter(self.ids)
-
     def __str__(self):
         return self.sep.join(str(i) for i in self.ids)
 
-    def __len__(self):
-        return len(self.ids)
-
-    def __eq__(self, other: NodeID):
-        #return (str(self) == str(other))
+    def __eq__(self, other):
         if len(self) != len(other):
             return False
-        for i, j in zip(self.ids, other.ids):
+        for i, j in zip(self, other):
             if i != j:
                 return False
         return True

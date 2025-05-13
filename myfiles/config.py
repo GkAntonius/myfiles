@@ -1,6 +1,8 @@
 from pathlib import Path
 import configparser
 
+CONFIG_FILENAME = '.myfilesrc'
+
 class UserConfig:
 
     user_defaults = {
@@ -21,36 +23,35 @@ class UserConfig:
             },
         }
 
-    @property
-    def sections(self):
-        return dict(self.user_defaults)
+    header_tag = 'myfiles user confiuration'
 
     def __init__(self):
+        self.files_read = []
         for sk in self.sections:
             for key in self.sections[sk]:
                 setattr(self, key, self.sections[sk][key])
 
-    @classmethod
-    def from_config_file(cls, fname=None):
-        if fname is None:
-            fname = Path('~/.myfilesrc')
-            #fname_local = Path('.myfilesrc')
-        else:
-            fname = Path(fname)
+    @property
+    def sections(self):
+        return dict(self.user_defaults)
 
     @classmethod
     def from_config_files(cls, fnames=None):
+
         if fnames is None:
             # Search for all configuration files in parent directories.
             fnames = []
-            #for parent in (p/'sub').parents:
-            #print(parent)
-            #home = Path('~').expanduser()
-            #if parent.resolve() == home.resolve():
-            #    print('Found home')
-
-            home = Path('~').expanduser()
-            
+            home = Path('~').expanduser().absolute()
+            curdir = Path().absolute()
+            p = curdir / CONFIG_FILENAME
+            if p.exists():
+                fnames.append(str(p))
+            for parent in curdir.parents:
+                p = parent / CONFIG_FILENAME
+                if p.exists():
+                    fnames.append(str(p))
+                if parent.resolve() == home.resolve():
+                    break
 
         elif isinstance(fnames, str):
             fnames = [fnames]
@@ -64,10 +65,12 @@ class UserConfig:
         if not fnames:
             return new
 
+        new.files_read.extend(fnames)
+
         config = configparser.ConfigParser()
         config.read(fnames)
-        for sk in self.sections:
-            for key in self.sections[sk]:
+        for sk in new.sections:
+            for key in new.sections[sk]:
                 setattr(new, key, config[sk][key])
 
         return new
@@ -75,19 +78,27 @@ class UserConfig:
     def write(self, fname):
         config = configparser.ConfigParser()
         for sk in self.sections:
+            d = {}
             for key in self.sections[sk]:
-                config[sk][key] = str(getattr(self, key))
+                d[key] = str(getattr(self, key))
+            config[sk] = d
 
         with open(fname, 'w') as configfile:
             config.write(configfile)
 
     def __str__(self):
-        S  = 'myfiles user confiuration\n'
-        S += '-------------------------\n'
+        S  = ''
+        n = len(self.header_tag)
+        S += n*'-' + '\n'
+        S += self.header_tag + '\n'
+        for fname in self.files_read:
+            S += str(Path(fname).absolute()) + '\n'
+        S += n*'-' + '\n'
+
         for sk in self.sections:
             for key in self.sections[sk]:
                 val = getattr(self, key)
-                S += f"{key}={val}\n"
+                S += f"{key} = {repr(val)}\n"
         return S
 
 
@@ -99,6 +110,8 @@ class ProjectConfig(UserConfig):
             'topdir' : '~/Projects/ProjectName',
             },
     }
+
+    header_tag = 'myfiles project confiuration'
 
     @property
     def sections(self):
