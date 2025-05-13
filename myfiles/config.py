@@ -36,30 +36,26 @@ class UserConfig:
         return dict(self.user_defaults)
 
     @classmethod
-    def from_config_files(cls, fnames=None):
+    def from_config_files(cls, workdir=None):
 
-        if fnames is None:
-            # Search for all configuration files in parent directories.
-            fnames = []
-            home = Path('~').expanduser().absolute()
-            curdir = Path().absolute()
-            p = curdir / CONFIG_FILENAME
+        home = Path('~').expanduser().absolute()
+        if workdir is None:
+            workdir = Path().absolute()
+        else:
+            workdir = Path(workdir)
+
+        fnames = []
+
+        # Search for all configuration files in parent directories.
+        p = workdir / CONFIG_FILENAME
+        if p.exists():
+            fnames.append(str(p))
+        for parent in workdir.parents:
+            p = parent / CONFIG_FILENAME
             if p.exists():
                 fnames.append(str(p))
-            for parent in curdir.parents:
-                p = parent / CONFIG_FILENAME
-                if p.exists():
-                    fnames.append(str(p))
-                if parent.resolve() == home.resolve():
-                    break
-
-        elif isinstance(fnames, str):
-            fnames = [fnames]
-        else:
-            fnames = list(fnames)
-
-        #if not fname.exists():
-        #    raise Exception(str(fname) + " does not exist.")
+            if parent.resolve() == home.resolve():
+                break
 
         new = cls()
         if not fnames:
@@ -85,6 +81,23 @@ class UserConfig:
 
         with open(fname, 'w') as configfile:
             config.write(configfile)
+
+    @classmethod
+    def new_config_file(cls):
+        target = Path('~').expanduser().absolute() / CONFIG_FILENAME
+        if not target.exists():
+            answer = input(f"File '~/{CONFIG_FILENAME}' does not exist. \n"
+                           "Do you want to write a new one? [y/N]: ")
+    
+            if answer.lower().startswith('y'):
+                rc = cls.from_config_files([])
+                rc.write(str(target))
+                print(f"Wrote file '~/{CONFIG_FILENAME}'.")
+                return rc
+            else:
+                print(f"No file written.")
+        #    print("Cannot overwrite existing file '~/.myfilesrc'.")
+        return cls.from_config_files()
 
     def __str__(self):
         S  = ''
@@ -118,4 +131,32 @@ class ProjectConfig(UserConfig):
         d = dict(self.user_defaults)
         d.update(self.project_defaults)
         return d
+
+    def write(self, fname):
+        config = configparser.ConfigParser()
+        for sk in self.sections:
+            d = {}
+            for key in self.project_defaults[sk]:
+                d[key] = str(getattr(self, key))
+            config[sk] = d
+
+        with open(fname, 'w') as configfile:
+            config.write(configfile)
+
+    #@classmethod
+    #def new_config_file(cls):
+    #    target = Path('~').expanduser().absolute() / CONFIG_FILENAME
+    #    if not target.exists():
+    #        answer = input(f"File '~/{CONFIG_FILENAME}' does not exist. \n"
+    #                       "Do you want to write a new one? [y/N]: ")
+    #
+    #        if answer.lower().startswith('y'):
+    #            rc = cls.from_config_files([])
+    #            rc.write(str(target))
+    #            print(f"Wrote file '~/{CONFIG_FILENAME}'.")
+    #            return rc
+    #        else:
+    #            print(f"No file written.")
+    #    #    print("Cannot overwrite existing file '~/.myfilesrc'.")
+    #    return cls.from_config_files()
 

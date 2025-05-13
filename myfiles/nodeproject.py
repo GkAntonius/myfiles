@@ -23,7 +23,31 @@ class Project:
         Scan a path and try to figure out the top directory
         for this project.
         """
-        pass
+        if workdir is None:
+            workdir = Path('.')
+        else:
+            workdir = Path(workdir)
+
+        workdir = workdir.expanduser().resolve()
+        userconfig = UserConfig.from_config_files()
+        projects = Path(userconfig.global_projects_dir).expanduser().resolve()
+
+        if workdir == projects:
+            raise Exception(
+                f'Projects must be in a subdirectory of {projects}')
+
+        # GA: Will not work if executed from a scratch directory
+        #     The solution is to have a project config file telling us
+        #     the project topdir.
+        for p in workdir.parents:
+            if p.resolve() == projects:
+                break
+        else:
+            raise Exception(
+                f'Projects must be in a subdirectory of {projects}')
+
+        p = workdir.relative_to(projects)
+        topdir = projects / p.parts[0]
 
     def from_node(cls, node):
         pass
