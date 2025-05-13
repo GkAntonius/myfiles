@@ -1,21 +1,38 @@
-
 from pathlib import Path
-
 from .config import UserConfig, ProjectConfig
 
 __all__ = ['Project', 'Node', 'NodeID']
 
 class Project:
-    path = '~/Projects/Someproject'
-    scratch_path = 'Scratch'
-    production_path = 'Production'
-    analysis_path = 'Analysis'
-    plots_path = 'Plots'
-    data_path = 'Data'
 
-    def __init__(self, name, workdir):
-        self.name = name
-        self.workdir = workdir
+    def __init__(self, config=None):
+        config = config or ProjectConfig()
+        self.config = config
+        self.name = str(config['Project']['name'])
+        self.topdir = config.projectsdir / self.name
+        self.local_data = self.topdir / config['Local']['data']
+        self.production = self.topdir / config['Local']['production']
+        self.analysis = self.topdir / config['Local']['analysis']
+        self.results = self.topdir / config['Local']['results']
+
+    def __str__(self):
+        S = ''
+        header = f'Project {self.name}'
+        n = 2 * len(header)
+        S += n*'=' + '\n'
+        S += header + '\n'
+        S += f'Top directory: {self.topdir}\n'
+        S += n*'-' + '\n'
+        S += 'Configuration files: \n'
+        for fname in self.config.files_read:
+            S += str(Path(fname).absolute()) + '\n'
+        S += n*'-' + '\n'
+        S += f'Directories:\n'
+        for p in (self.local_data,self.production,
+                  self.analysis,self.results):
+            S += f'    {p}\n'
+        S += n*'=' + '\n'
+        return S
 
     @classmethod
     def from_path(cls, workdir=None):
@@ -112,7 +129,6 @@ class NodeID(list):
                 return False
         return True
 
-
 class Node:
     """
     A node represents a calculation that we perform and analyse,
@@ -157,34 +173,3 @@ class Node:
     #    Use own ids, and possibly name to search for a production directory.
     #    """ 
     #    return self.find_subdir()
-
-# =========================================================================== #
-# Interface funtions
-# =========================================================================== #
-
-def find_node(n='*'):
-    pass
-
-def new_workdir(name, n=1):
-    """
-    Scan the baseame for ids, and create a new directory full name.
-    """
-    pass
-
-def get_pseudo_dir(dirname=None):
-    pass
-
-def get_structure_dir():
-    pass
-
-def find_structure(fname):
-    """Return absolute paths of a structure"""
-    pass
-
-def get_pseudos(psps):
-    """Return list of absolute psp paths"""
-    pass
-
-def find_calc_dir(psps):
-    """Find a calculation directory using full path info."""
-    pass

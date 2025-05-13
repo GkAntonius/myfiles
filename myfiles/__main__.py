@@ -5,14 +5,31 @@ from .config import UserConfig, ProjectConfig
 from .nodeproject import Project, Node
 
 def main():
-    UserConfig.new_config_file()
-    print_user_config()
-    #print_project()
+    check_user_config()
+    check_project_config()
+    check_project()
     #print_node()
 
-def print_user_config():
-    rc = UserConfig.from_config_files()
+
+def check_user_config():
+    rc = UserConfig()
     print(rc)
+    if not rc.file_exists:
+        rc.write_config_file()
+
+def check_project_config():
+    rc = ProjectConfig()
+    print(rc)
+    if not rc.file_exists:
+        rc.write_config_file()
+
+def check_project():
+    proj = Project()
+    print(proj)
+
+#def print_user_config():
+#    rc = UserConfig.from_config_files()
+#    print(rc)
 
 def print_project():
     curdir = Path('.')
