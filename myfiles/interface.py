@@ -1,6 +1,7 @@
 """
 Interface functions
 """
+from pathlib import Path
 from .data import DataDirs
 from .nodeproject import Project, Node, NodeID
 
@@ -34,3 +35,48 @@ def find_production_dir(ids=None):
     return node.find_production_dir(ids)
 
 find_calc_dir = find_production_dir
+
+
+# GA: Not sure I will keep the following.
+
+def make_data_fname(ids, where='.', tag='', ext='.dat', prefix='data',
+                    sep='-', rel=True, create=True):
+    """
+    Example:
+        > make_data_fname([1,2,3], where='Data', tag='example')
+        > 'Data/data-1-2-3-example.dat'
+    """
+
+    tokens = list()
+
+    if prefix:
+        tokens.append(prefix) 
+
+    if ids:
+        tokens.extend(ids)
+
+    if tag:
+        tokens.append(tag.replace(' ', sep))
+
+    data_fname = sep.join(map(str, tokens))
+
+    if ext:
+        data_fname += '.' + ext.lstrip('.')
+
+    path = Path(where)
+
+    if create:
+        path.mkdir(exist_ok=True)
+
+    return str(path / data_fname)
+
+
+def make_plot_fname(ids, where='.', tag='', ext='.pdf', prefix='plot',
+                    **kwargs):
+    """
+    Example:
+        > make_plot_fname([1,2,3], where='Plots', tag='example')
+        > 'Plot/data-1-2-3-example.dat'
+    """
+    return make_data_fname(ids, where, tag, ext, prefix, **kwargs)
+
