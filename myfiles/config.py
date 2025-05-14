@@ -28,7 +28,7 @@ class UserConfig(dict):
     header_tag = 'myfiles user confiuration'
     _config_filename = '.myfilesrc'
 
-    def __init__(self, read=True, **kwargs):
+    def __init__(self, read=True, path='.', **kwargs):
         super().__init__()
         self.update(self.defaults)
         self.update(kwargs)
@@ -37,7 +37,7 @@ class UserConfig(dict):
         if not read:
             return self
 
-        fnames = self.find_all_config_files('.')
+        fnames = self.find_all_config_files(path)
 
         self.files_read.extend(fnames)
 

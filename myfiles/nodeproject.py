@@ -5,11 +5,11 @@ __all__ = ['Project', 'Node', 'NodeID']
 
 class Project:
 
-    def __init__(self, config=None):
-        config = config or ProjectConfig()
+    def __init__(self, config=None, path='.'):
+        config = config or ProjectConfig(path=path)
         self.config = config
         self.name = str(config['Project']['name'])
-        self.topdir = config.projectsdir / self.name
+        self.topdir = config.topdir
         self.local_data = self.topdir / config['Local']['data']
         self.production = self.topdir / config['Local']['production']
         self.analysis = self.topdir / config['Local']['analysis']
@@ -34,37 +34,37 @@ class Project:
         S += n*'=' + '\n'
         return S
 
-    @classmethod
-    def from_path(cls, workdir=None):
-        """
-        Scan a path and try to figure out the top directory
-        for this project.
-        """
-        if workdir is None:
-            workdir = Path('.')
-        else:
-            workdir = Path(workdir)
+    #@classmethod
+    #def from_path(cls, workdir=None):
+    #    """
+    #    Scan a path and try to figure out the top directory
+    #    for this project.
+    #    """
+    #    if workdir is None:
+    #        workdir = Path('.')
+    #    else:
+    #        workdir = Path(workdir)
 
-        workdir = workdir.expanduser().resolve()
-        userconfig = UserConfig.from_config_files()
-        projects = Path(userconfig.global_projects_dir).expanduser().resolve()
+    #    workdir = workdir.expanduser().resolve()
+    #    userconfig = UserConfig.from_config_files()
+    #    projectsdir = userconfig.projectsdir
 
-        if workdir == projects:
-            raise Exception(
-                f'Projects must be in a subdirectory of {projects}')
+    #    if workdir == projects:
+    #        raise Exception(
+    #            f'Projects must be in a subdirectory of {projects}')
 
-        # GA: Will not work if executed from a scratch directory
-        #     The solution is to have a project config file telling us
-        #     the project topdir.
-        for p in workdir.parents:
-            if p.resolve() == projects:
-                break
-        else:
-            raise Exception(
-                f'Projects must be in a subdirectory of {projects}')
+    #    # GA: Will not work if executed from a scratch directory
+    #    #     The solution is to have a project config file telling us
+    #    #     the project topdir.
+    #    for p in workdir.parents:
+    #        if p.resolve() == projectsdir:
+    #            break
+    #    else:
+    #        raise Exception(
+    #            f'Projects must be in a subdirectory of {projects}')
 
-        p = workdir.relative_to(projects)
-        topdir = projects / p.parts[0]
+    #    p = workdir.relative_to(projects)
+    #    topdir = projects / p.parts[0]
 
     def from_node(cls, node):
         pass
@@ -102,6 +102,7 @@ class NodeID(list):
     def extend(self, ids:[int]):
         super().extend(list(ids))
 
+    @classmethod
     def from_path(cls, path: str, n='*'):
         path = str(path)
 
@@ -129,20 +130,19 @@ class NodeID(list):
                 return False
         return True
 
+
 class Node:
     """
     A node represents a calculation that we perform and analyse,
     which is identified by a NodeID and a name.
-    Several directories may share the node information:
+    Several directories may share the node information, in particular:
     - A production directory
     - An analysis directory
-    - An plot directory
     """
     
     def __init__(self, ids: [int], n=None, name=''):
         self.id = NodeID(ids)
         self.name = name
-
         self.project = None
 
     def from_filename(cls, fname=None, n='*'):
@@ -152,7 +152,8 @@ class Node:
         """
         pass
 
-    def from_path(cls, pathfname: str | Path, n='*'):
+    @classmethod
+    def from_path(cls, path: str | Path):
         pass
 
     def new_filename(self, name, where='.', ext=''):

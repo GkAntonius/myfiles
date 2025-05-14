@@ -27,21 +27,8 @@ def check_project():
     proj = Project()
     print(proj)
 
-#def print_user_config():
-#    rc = UserConfig.from_config_files()
-#    print(rc)
-
-def print_project():
-    curdir = Path('.')
-    proj = Project.from_path(curdir)
-    try:
-        proj = Project.from_path(__file__)
-        print(proj)
-    except:
-        pass
-
-def print_node():
-    node = Node.from_path(__file__)
+def check_node():
+    node = Node()
     print(node)
 
 if __name__ == "__main__":
