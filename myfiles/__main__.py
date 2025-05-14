@@ -8,7 +8,7 @@ def main():
     check_user_config()
     check_project_config()
     check_project()
-    #print_node()
+    check_node()
 
 
 def check_user_config():
@@ -29,7 +29,9 @@ def check_project():
 
 def check_node():
     node = Node()
-    print(node)
+    if node:
+        node.scan()
+        print(node)
 
 if __name__ == "__main__":
     sys.exit(main())

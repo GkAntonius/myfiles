@@ -1,7 +1,8 @@
 from pathlib import Path
-from .config import UserConfig, ProjectConfig
+from .config import UserConfig, ProjectConfig, NodeConfig
+from .nodeid import NodeID
 
-__all__ = ['Project', 'Node', 'NodeID']
+__all__ = ['Project', 'Node']
 
 class Project:
 
@@ -34,44 +35,6 @@ class Project:
         S += n*'=' + '\n'
         return S
 
-    #@classmethod
-    #def from_path(cls, workdir=None):
-    #    """
-    #    Scan a path and try to figure out the top directory
-    #    for this project.
-    #    """
-    #    if workdir is None:
-    #        workdir = Path('.')
-    #    else:
-    #        workdir = Path(workdir)
-
-    #    workdir = workdir.expanduser().resolve()
-    #    userconfig = UserConfig.from_config_files()
-    #    projectsdir = userconfig.projectsdir
-
-    #    if workdir == projects:
-    #        raise Exception(
-    #            f'Projects must be in a subdirectory of {projects}')
-
-    #    # GA: Will not work if executed from a scratch directory
-    #    #     The solution is to have a project config file telling us
-    #    #     the project topdir.
-    #    for p in workdir.parents:
-    #        if p.resolve() == projectsdir:
-    #            break
-    #    else:
-    #        raise Exception(
-    #            f'Projects must be in a subdirectory of {projects}')
-
-    #    p = workdir.relative_to(projects)
-    #    topdir = projects / p.parts[0]
-
-    def from_node(cls, node):
-        pass
-
-    def new_node(self, ids, name):
-        pass
-
     def iter_nodes(self):
         pass
 
@@ -92,45 +55,6 @@ class Project:
         pass
 
 
-class NodeID(list):
-    """A sequence of digits identifying a node."""
-    sep = '-'
-
-    def __init__(self, ids: [int]):
-        super().__init__(ids)
-
-    def extend(self, ids:[int]):
-        super().extend(list(ids))
-
-    @classmethod
-    def from_path(cls, path: str, n='*'):
-        path = str(path)
-
-    def from_basename(cls, fname: str, n='*'):
-        """Read the ids from a file basename."""
-        fname = str(fname)
-        ids = list()
-        for tok in fname.split(self.sep):
-            if tok.isdigit():
-                ids.append(int(tok))
-        return cls(ids)
-
-    def is_empty(self):
-        """A node is empty if all its directories are empty."""
-        return False
-
-    def __str__(self):
-        return self.sep.join(str(i) for i in self.ids)
-
-    def __eq__(self, other):
-        if len(self) != len(other):
-            return False
-        for i, j in zip(self, other):
-            if i != j:
-                return False
-        return True
-
-
 class Node:
     """
     A node represents a calculation that we perform and analyse,
@@ -139,22 +63,145 @@ class Node:
     - A production directory
     - An analysis directory
     """
-    
-    def __init__(self, ids: [int], n=None, name=''):
-        self.id = NodeID(ids)
-        self.name = name
-        self.project = None
+    def __init__(self, ids=None, config=None):
 
-    def from_filename(cls, fname=None, n='*'):
-        """
-        Initialize a new instance from the current filename,
-        or one specified explicitly. 
-        """
-        pass
+        self.config = config or NodeConfig()
+        self.name = self.config['Node']['name']
+
+        if ids is None:
+            self.ids = NodeID.from_path()
+        else:
+            self.ids = NodeID(ids)
+
+        self.project = Project()
+
+        # Sub nodes
+        self.nodes = []
+
+        # Files and directories
+        self.production_files = []
+        self.production_directories = []
+
+        self.analysis_files = []
+        self.analysis_directories = []
+
+        self.results_directories = []
+        self.results_files = []
+
+        #if not self.ids:
+        #    raise Exception('Node has no id.')
+
+    def __bool__(self):
+        return bool(self.ids)
 
     @classmethod
-    def from_path(cls, path: str | Path):
-        pass
+    def from_path(cls, path='.', **kwargs):
+        ids = NodeId.from_path(path)
+        cls(ids, **kwargs)
+
+    def __str__(self):
+        S = ''
+        header = f'Node {self.ids}'
+        n = 4 * len(header)
+        S += n*'=' + '\n'
+        S += header + '\n'
+        S += n*'-' + '\n'
+        S += 'Configuration files: \n'
+        for fname in self.config.files_read:
+            S += str(Path(fname).absolute()) + '\n'
+        S += n*'-' + '\n'
+        S += f'Production directories and files:\n'
+        for p in self.production_directories + self.production_files:
+            S += f'    {p}\n'
+        S += n*'-' + '\n'
+        S += f'Analysis directories and files:\n'
+        for p in self.analysis_directories + self.analysis_files:
+            S += f'    {p}\n'
+        S += n*'-' + '\n'
+        S += f'Results directories and files:\n'
+        for p in self.results_directories + self.results_files:
+            S += f'    {p}\n'
+        S += n*'=' + '\n'
+        return S
+
+
+    def scan(self):
+        """
+        Find all files and directories belonging to this node.
+        Those files must have arbitrary names, but their id
+        structure must match those of the node or its subnodes.
+        """
+        self.scan_production()
+        self.scan_analysis()
+        self.scan_results()
+
+    def scan_production(self):
+        """
+        Look for matching files and directories in project's production dir.
+        """
+        self.production_directories, self.production_files = (
+            self.ids.scan_directory(self.project.production)
+            )
+
+    def scan_analysis(self):
+        """
+        Look for matching files and directories in project's analysis dir.
+        """
+        self.analysis_directories, self.analysis_files = (
+            self.ids.scan_directory(self.project.analysis)
+            )
+
+    def scan_results(self):
+        """
+        Look for matching files and directories in project's analysis dir.
+        """
+        self.results_directories, self.results_files = (
+            self.ids.scan_directory(self.project.results)
+            )
+
+    @property
+    def basename(self):
+        base, rest = self.ids.partition(1)
+        return str(base) + '-' + self.name
+
+    @property
+    def production(self):
+        return self.project.production / self.basename
+
+    @property
+    def analysis(self):
+        return self.project.analysis / self.basename
+
+    def find_production_dir(self, ids=None):
+        """
+        Search for a production directory in node that matches exactly
+        some ids or the node's ids.
+        """ 
+        if ids is None:
+            ids = self.ids
+        else:
+            ids = NodeID(ids)
+
+        if not self.production_directories:
+            self.scan_production()
+
+        found = []
+        for path in self.production_directories:
+            pathID = NodeID.from_path(path)
+
+            if pathID == ids:
+                found.append(str(path))
+
+        if not found:
+            S = f'Did not find any production directory matching: {ids}\n'
+            S += f'Project production directory: {self.project.production}\n'
+            S += f'Node production directory: {self.production_directories}\n'
+            raise Exception(S)
+
+        return found[0]
+
+    def make_filename(self, basename, ext):
+        return str(self.ids) + '-' + basename
 
     def new_filename(self, name, where='.', ext=''):
         """
@@ -162,15 +209,10 @@ class Node:
         """
         pass
 
-    def find_subdir(self, where):
-        """
-        Use own ids, and possibly name to search for a subdirectory directory
-        belonging to this node.
-        """ 
-        pass
-
-    #def find_production_dir(self):
+    #def find_subdir(self, where):
     #    """
-    #    Use own ids, and possibly name to search for a production directory.
+    #    Use own ids, and possibly name to search for a subdirectory directory
+    #    belonging to this node.
     #    """ 
-    #    return self.find_subdir()
+    #    pass
+

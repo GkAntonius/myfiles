@@ -150,7 +150,7 @@ class ProjectConfig(UserConfig):
 
     project_defaults = {
         'Project': {
-            'name' : 'UnknownProjectName',
+            'name' : 'DefaultProjectName',
             },
     }
 
@@ -207,6 +207,25 @@ class ProjectConfig(UserConfig):
             print(f'Warning: top directory does not exist:\n {topdir}')
 
         return self.topdir
+
+
+class NodeConfig(ProjectConfig):
+
+    node_defaults = {
+        'Node': {
+            'name' : 'DefaultNodeName',
+            'subname' : 'DefaultNodeSubName',
+            'ndigids' : 3,
+            'depth' : 1,
+            },
+    }
+
+    @property
+    def defaults(self):
+        d = dict(self.user_defaults)
+        d.update(self.project_defaults)
+        d.update(self.node_defaults)
+        return d
 
 
 class RemoteHosts(UserConfig):
