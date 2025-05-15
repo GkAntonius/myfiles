@@ -1,5 +1,6 @@
 from pathlib import Path
 import configparser
+from copy import copy, deepcopy
 import json
 
 CONFIG_FILENAME = '.myfilesrc'
@@ -52,7 +53,7 @@ class UserConfig(dict):
 
     @property
     def defaults(self):
-        return dict(self.user_defaults)
+        return deepcopy(self.user_defaults)
 
     @property
     def home(self):
@@ -92,6 +93,10 @@ class UserConfig(dict):
                 fnames.append(str(p))
             if parent.resolve() == home.resolve():
                 break
+        if home not in workdir.parents:
+            p = home / cls._config_filename
+            if p.exists():
+                fnames.append(str(p))
         fnames.reverse()
         return fnames
 
@@ -158,8 +163,8 @@ class ProjectConfig(UserConfig):
 
     @property
     def defaults(self):
-        d = dict(self.user_defaults)
-        d.update(self.project_defaults)
+        d = deepcopy(self.user_defaults)
+        d.update(deepcopy(self.project_defaults))
         return d
 
     @property
@@ -197,11 +202,25 @@ class ProjectConfig(UserConfig):
         target = topdir / self._config_filename
         super().write_config_file(target)
 
+    @property
+    def name_unknown(self):
+        return (self['Project']['name'] == self.defaults['Project']['name'])
+
     def find_topdir(self):
-        if self['Project']['name'] == self.defaults['Project']['name']:
-            p = Path().absolute().relative_to(self.projectsdir)
-            name = p.parts[0]
-            self['Project']['name'] = name
+        #if self['Project']['name'] == self.defaults['Project']['name']:
+        if self.name_unknown:
+            try:
+                p = Path().absolute().relative_to(self.projectsdir)
+                name = p.parts[0]
+                self['Project']['name'] = name
+            except ValueError:
+                msg  = 20 * '=' + '\n'
+                msg += f'Error: Make sure you have a valid {self._config_filename} file.\n'
+                msg += 'Current path: ' + str(Path().absolute()) + '\n'
+                msg += 20 * '=' + '\n'
+                print(msg)
+                raise
+                
 
         if not self.topdir.exists():
             print(f'Warning: top directory does not exist:\n {topdir}')

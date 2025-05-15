@@ -8,8 +8,8 @@ class NodeID(list):
     def __init__(self, ids: [int]):
         super().__init__(ids)
 
-    def extend(self, ids:[int]):
-        super().extend(list(ids))
+    def __str__(self):
+        return self.sep.join(str(i) for i in self)
 
     def __eq__(self, other):
         if len(self) != len(other):
@@ -90,7 +90,6 @@ class NodeID(list):
         else:
             return cls.from_path(Path(path).parent)
 
-
     @classmethod
     def read_ids(cls, fname):
         """Read the ids from a file basename."""
@@ -102,13 +101,12 @@ class NodeID(list):
         x = basename.split(cls.sep)
         return cls(ids)
 
-    def __str__(self):
-        return self.sep.join(str(i) for i in self)
+    from_str = read_ids
 
     def scan_directory(self, path):
         """
         Look for matching directories and files in a path.
-        Return a list directories and a list of files
+        Return a list of all directories and files.
         """
         directories = []
         files = []
@@ -121,21 +119,24 @@ class NodeID(list):
                 if pathID in self:
                     files.append(str(path))
 
+            to_remove = []
             for dirname in dirnames:
                 path = dirpath / dirname
+                #print(f'Scanning : {path}')  # DEBUG
                 pathID = self.from_path(path)
-
                 if (self not in pathID) and (pathID not in self):
-                    # GA: I dont quite understand.
-                    # It seems like dirnames.remove(dirname)
-                    # will make the outer loop skip the next iteration...
-                    #dirnames.remove(dirname)
-                    # Turns out the continue instruction is sufficient
-                    # to prevent walking down dirname
+                    to_remove.append(dirname)
                     continue
 
                 if pathID in self:
-                    directories.append(str(path))
+                    directories.append(str(path) + '/')
+                    # Stop iteration for directories we add.
+                    if len(pathID) > len(self):
+                        to_remove.append(dirname)
+                        continue
+
+            for dirname in to_remove:
+                dirnames.remove(dirname)
 
         return directories, files
 

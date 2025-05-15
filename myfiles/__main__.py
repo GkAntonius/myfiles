@@ -20,6 +20,9 @@ def check_user_config():
 def check_project_config():
     rc = ProjectConfig()
     print(rc)
+    print(rc['Project']['name'])
+    print(rc.defaults['Project']['name'])
+    print(rc.name_unknown)
     if not rc.file_exists:
         rc.write_config_file()
 
