@@ -28,10 +28,13 @@ def check_project():
     print(proj)
 
 def check_node():
+    from __main__ import __file__ as mainfile 
     node = Node()
     if node:
         node.scan()
         print(node)
+    else:
+        print(node.ids)
 
 if __name__ == "__main__":
     sys.exit(main())

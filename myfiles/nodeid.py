@@ -28,16 +28,22 @@ class NodeID(list):
         return True
 
     def trim(self, n):
-        cls = type(self)
         if n > len(self):
             return self
+        cls = type(self)
         return cls(self[:n])
 
     def partition(self, n):
-        cls = type(self)
         if n > len(self):
             return self, cls([])
+        cls = type(self)
         return cls(self[:n]), cls(self[n:])
+
+    def last(self, n):
+        if n > len(self):
+            return self
+        cls = type(self)
+        return cls(self[-n:])
 
     @classmethod
     def from_path(cls, path=None):
@@ -48,7 +54,14 @@ class NodeID(list):
         if path is None:
             try:
                 from __main__ import __file__ as mainfile
+
+                # Special case, when called from this module's main function.
+                from .__main__ import __file__ as localmainfile
+                if mainfile == localmainfile:
+                    return cls.from_path('.')
+
                 return cls.from_path(mainfile)
+
             except:
                 return cls.from_path('.')
 
@@ -61,6 +74,22 @@ class NodeID(list):
             rest = rest.parent
             last = rest.name
         return cls(list(reversed(ids)))
+
+    @classmethod
+    def from_parent_path(cls, path=None):
+        """
+        Read the ids from the path parent, typically the directory hosting
+        a file.
+        """
+        if path is None:
+            try:
+                from __main__ import __file__ as mainfile
+                return cls.from_path(Path(mainfile).parent)
+            except:
+                return cls.from_path(Path().parent)
+        else:
+            return cls.from_path(Path(path).parent)
+
 
     @classmethod
     def read_ids(cls, fname):

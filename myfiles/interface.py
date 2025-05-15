@@ -25,9 +25,9 @@ def get_pseudo(psps, subdir=None):
     """Return list of absolute psp paths."""
     return DataDirs().get_pseudo(psps, subdir=subdir)
 
-def get_pseudo_dir(subdir=None):
+def get_pseudo_dir(subdir=None, keywords=()):
     """Return absolute paths of a pseudopotential directory."""
-    return DataDirs().get_pseudo_dir(subdir=subdir)
+    return DataDirs().get_pseudo_dir(subdir=subdir, keywords=keywords)
 
 def find_production_dir(ids=None):
     """Find a production directory matching some ids."""
@@ -36,6 +36,33 @@ def find_production_dir(ids=None):
 
 find_calc_dir = find_production_dir
 
+def get_workdir(name, ids=None):
+    if ids is None:
+        pids = NodeID.from_parent_path()
+        ids = NodeID.from_path()
+        if m := len(pids) < len(ids):
+            _, ids = ids.partition(m)
+    else:
+        ids = NodeID(ids)
+
+    return Path(f'{ids}{ids.sep}{name}')
+
+def get_filename(name, ids=None, ext='', where='.', sep='-'
+        ):
+    if ids is None:
+        pids = NodeID.from_parent_path()
+        ids = NodeID.from_path()
+        if m := len(pids) < len(ids):
+            _, ids = ids.partition(m)
+    else:
+        ids = NodeID(ids)
+
+    basename = str(name)
+    if ext:
+        basename += '.' + ext.lstrip('.')
+
+    filename = f'{ids}{ids.sep}{basename}'
+    return Path(where) / filename
 
 # GA: Not sure I will keep the following.
 
