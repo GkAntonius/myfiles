@@ -1,6 +1,8 @@
 from pathlib import Path
-from .config import UserConfig, ProjectConfig, NodeConfig
+from .config import UserConfig, ProjectConfig, NodeConfig, RemoteHosts
 from .nodeid import NodeID
+from .util import prompt_user_and_run
+import subprocess
 
 __all__ = ['Project', 'Node']
 
@@ -9,9 +11,12 @@ class Project:
     def __init__(self, config=None, path='.'):
         config = config or ProjectConfig(path=path)
         self.config = config
+        self.remote = RemoteHosts()
         self.name = str(config['Project']['name'])
         self.topdir = config.topdir
         self.local_data = self.topdir / config['Local']['data']
+        #self.local_scratch = (self.config.global_scratch
+        #                      / config['Global']['projects'])
         self.production = self.topdir / config['Local']['production']
         self.analysis = self.topdir / config['Local']['analysis']
         self.results = self.topdir / config['Local']['results']
@@ -48,8 +53,35 @@ class Project:
     def sync_plots(self):
         pass
 
-    def pull_production_dir(self, remotehost, remote_project_dir, ids):
-        pass
+    def pull_production_dir(self, hostname, ids):
+        if hostname not in self.remote:
+            raise Exception(f'Unknown host: {hostname}')
+
+        node = Node(ids)
+        tag = str(node.ids.get_tag())
+        rel_prod = self.production.relative_to(self.config.home)
+        loc_prod = self.production.relative_to(Path().absolute())
+
+        command_parts = ["rsync", "-avh",
+            f"{hostname}:{rel_prod}/{tag}*",
+            f"{loc_prod}/"
+            ]
+        results = prompt_user_and_run(command_parts)
+
+    def push_production_dir(self, hostname, ids):
+        if hostname not in self.remote:
+            raise Exception(f'Unknown host: {hostname}')
+
+        node = Node(ids)
+        tag = str(node.ids.get_tag())
+        rel_prod = self.production.relative_to(self.config.home)
+        loc_prod = self.production.relative_to(Path().absolute())
+
+        command_parts = ["rsync", "-avh",
+            f"{loc_prod}/{tag}*",
+            f"{hostname}:{rel_prod}/",
+            ]
+        results = prompt_user_and_run(command_parts)
 
     def pull_analysis_dir(self, remotehost, remote_project_dir, ids):
         pass
@@ -65,7 +97,10 @@ class Node:
     """
     def __init__(self, ids=None, config=None):
 
-        self.config = config or NodeConfig()
+        if config is None:
+            self.config = NodeConfig()
+        else:
+            self.config = config
         self.name = self.config['Node']['name']
 
         if ids is None:

@@ -4,12 +4,27 @@ from pathlib import Path
 class NodeID(list):
     """A sequence of digits identifying a node."""
     sep = '-'
+    ndigits=3
 
     def __init__(self, ids: [int]):
-        super().__init__(ids)
+        if isinstance(ids, int):
+            super().__init__([ids])
+        elif isinstance(ids, str):
+            super().__init__([int(ids)])
+        else:
+            super().__init__(ids)
 
     def __str__(self):
-        return self.sep.join(str(i) for i in self)
+        S = ''
+        if len(self) > 0:
+            i0 = self[0]
+            S += f'{i0:0={self.ndigits}}'
+        if len(self) > 1:
+            S += self.sep + self.sep.join(str(i) for i in self[1:])
+        return S
+
+    def get_tag(self):
+        return str(self) + self.sep
 
     def __eq__(self, other):
         if len(self) != len(other):

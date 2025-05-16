@@ -2,31 +2,10 @@ from pathlib import Path
 import configparser
 from copy import copy, deepcopy
 import json
+import abc
 
-CONFIG_FILENAME = '.myfilesrc'
+class Config(dict, abc.ABC):
 
-class UserConfig(dict):
-
-    # These define a directory structure
-    user_defaults = {
-        'Global': {
-            'projects' : '~/Projects',
-            'scratch' : '~/Scratch',
-            'data' : '~/Data',
-            },
-        'Local': {
-            'data' : 'Data',
-            'production' : 'Production',
-            'analysis' : 'Analysis',
-            'results' : 'Results',
-            },
-        'Data': {
-            'structure' : 'Structures',
-            'pseudo' : 'Pseudos',
-            },
-        }
-
-    header_tag = 'myfiles user confiuration'
     _config_filename = '.myfilesrc'
 
     def __init__(self, read=True, path='.', **kwargs):
@@ -51,33 +30,31 @@ class UserConfig(dict):
                 except KeyError:
                     continue
 
+    def __str__(self):
+        S  = ''
+        n = len(self.header_tag) * 2
+        S += n*'=' + '\n'
+        S += self.header_tag + '\n'
+        S += n*'-' + '\n'
+        S += 'Files read: \n'
+        for fname in self.files_read:
+            S += str(Path(fname).absolute()) + '\n'
+        S += n*'-' + '\n'
+
+        d = json.dumps(dict(self))
+        json_object = json.loads(d)
+        S += json.dumps(json_object, indent=2) + '\n'
+        S += n*'=' + '\n'
+        return S
+
     @property
+    @abc.abstractmethod
     def defaults(self):
-        return deepcopy(self.user_defaults)
+        return {}
 
     @property
     def home(self):
         return Path('~').expanduser().absolute()
-    
-    @property
-    def filename(self):
-        return self.home / self._config_filename
-
-    @property
-    def projectsdir(self):
-        return Path(self['Global']['projects']).expanduser().absolute()
-
-    @property
-    def global_scratch(self):
-        return Path(self['Global']['scratch']).expanduser().absolute()
-
-    @property
-    def global_data(self):
-        return Path(self['Global']['data']).expanduser().absolute()
-
-    @property
-    def file_exists(self):
-        return self.filename.exists()
 
     @classmethod
     def find_all_config_files(cls, workdir):
@@ -111,6 +88,10 @@ class UserConfig(dict):
         with open(fname, 'w') as configfile:
             config.write(configfile)
 
+    @property
+    def filename(self):
+        return self.home / self._config_filename
+
     def write_config_file(self, target=None):
         """Will not overwrite an existing file."""
         target = target or self.filename
@@ -127,29 +108,52 @@ class UserConfig(dict):
 
         return self
 
-    def __str__(self):
-        S  = ''
-        n = len(self.header_tag) * 2
-        S += n*'=' + '\n'
-        S += self.header_tag + '\n'
-        S += n*'-' + '\n'
-        S += 'Files read: \n'
-        for fname in self.files_read:
-            S += str(Path(fname).absolute()) + '\n'
-        S += n*'-' + '\n'
 
-        d = json.dumps(dict(self))
-        json_object = json.loads(d)
-        S += json.dumps(json_object, indent=2) + '\n'
-        S += n*'=' + '\n'
-        return S
+class UserConfig(Config):
 
-        #for sk in self.defaults:
-        #    for key in self.defaults[sk]:
-        #        val = self[sk][key]
-        #        S += f"{key} = {repr(val)}\n"
-        #return S
+    # These define a directory structure
+    user_defaults = {
+        'Global': {
+            'projects' : '~/Projects',
+            'scratch' : '~/Scratch',
+            'data' : '~/Data',
+            },
+        'Local': {
+            'data' : 'Data',
+            'production' : 'Production',
+            'analysis' : 'Analysis',
+            'results' : 'Results',
+            },
+        'Data': {
+            'structure' : 'Structures',
+            'pseudo' : 'Pseudos',
+            },
+        }
 
+    header_tag = 'myfiles user confiuration'
+    @property
+    def defaults(self):
+        return deepcopy(self.user_defaults)
+    
+    @property
+    def filename(self):
+        return self.home / self._config_filename
+
+    @property
+    def projectsdir(self):
+        return Path(self['Global']['projects']).expanduser().absolute()
+
+    @property
+    def global_scratch(self):
+        return Path(self['Global']['scratch']).expanduser().absolute()
+
+    @property
+    def global_data(self):
+        return Path(self['Global']['data']).expanduser().absolute()
+
+    @property
+    def file_exists(self):
+        return self.filename.exists()
 
 class ProjectConfig(UserConfig):
 
@@ -207,7 +211,6 @@ class ProjectConfig(UserConfig):
         return (self['Project']['name'] == self.defaults['Project']['name'])
 
     def find_topdir(self):
-        #if self['Project']['name'] == self.defaults['Project']['name']:
         if self.name_unknown:
             try:
                 p = Path().absolute().relative_to(self.projectsdir)
@@ -233,7 +236,6 @@ class NodeConfig(ProjectConfig):
     node_defaults = {
         'Node': {
             'name' : 'DefaultNodeName',
-            'subname' : 'DefaultNodeSubName',
             'ndigids' : 3,
             'depth' : 1,
             },
@@ -247,11 +249,70 @@ class NodeConfig(ProjectConfig):
         return d
 
 
-class RemoteHosts(UserConfig):
-
-    project_defaults = {
-        'Remotehosts': {
-            'name' : 'HOSTNAME',
-            },
+class RemoteHosts(Config):
+    """
+    Assume your ~/.ssh/config is set so that
+    """
+    remotehosts_defaults = {
+        'RemoteHosts': {
+            'hosts' : [], # Must be replaced at initialization
+    #    # Should be a dict of dicts
+    #    #   'narval': {'name' : 'narval'}
+        },
     }
+
+    header_tag = 'Remote hosts'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self['RemoteHosts']['hosts'] = []
+        
+        # Manual parsing!
+        sshconfig = Path('~/.ssh/config').expanduser().absolute()
+        if sshconfig.exists():
+            with open(str(sshconfig), 'r') as f:
+                for line in f.readlines():
+                    if line.startswith('Host'):
+                        parts = line.split()
+                        if len(parts) > 1:
+                            self['RemoteHosts']['hosts'].append(parts[1])
+            self.files_read.append(sshconfig)
+
+    def find_all_config_files(self, path):
+        return []
+
+    @property
+    def defaults(self):
+        return deepcopy(self.remotehosts_defaults)
+
+    @property
+    def hosts(self):
+        return self['RemoteHosts']['hosts']
+
+    def __contains__(self, hostname):
+        return (hostname in self.hosts)
+    
+    def write(self, fname):
+        return
+
+    def write_config_file(self, target=None):
+        return
+
+    def __str__(self):
+        #S  = super().__str__()
+        S = ''
+        n = len(self.header_tag) * 2
+        S += n*'=' + '\n'
+        S += self.header_tag + '\n'
+        S += n*'-' + '\n'
+        S += 'Files read: \n'
+        for fname in self.files_read:
+            S += str(Path(fname).absolute()) + '\n'
+        S += n*'-' + '\n'
+
+        S += 'Remote hosts: \n'
+        for host in self.hosts:
+            S += f'    {host}\n'
+        S += n*'=' + '\n'
+        return S
 
