@@ -58,6 +58,7 @@ class Project:
             raise Exception(f'Unknown host: {hostname}')
 
         node = Node(ids)
+
         tag = str(node.ids.get_tag())
         rel_prod = self.production.relative_to(self.config.home)
         loc_prod = self.production.relative_to(Path().absolute())
@@ -73,6 +74,9 @@ class Project:
             raise Exception(f'Unknown host: {hostname}')
 
         node = Node(ids)
+        if not node:
+            raise Exception(f'Node not found: {ids}')
+
         tag = str(node.ids.get_tag())
         rel_prod = self.production.relative_to(self.config.home)
         loc_prod = self.production.relative_to(Path().absolute())
@@ -83,8 +87,35 @@ class Project:
             ]
         results = prompt_user_and_run(command_parts)
 
-    def pull_analysis_dir(self, remotehost, remote_project_dir, ids):
-        pass
+    #def pull_scratch(self, hostname, ids):
+
+    #    node = Node(ids)
+
+    #    tag = str(node.ids.get_tag())
+    #    rel_prod = self.production.relative_to(self.config.home)
+    #    loc_prod = self.production.relative_to(Path().absolute())
+
+    #    command_parts = ["rsync", "-avh",
+    #        f"{hostname}:{rel_prod}/{tag}*",
+    #        f"{loc_prod}/"
+    #        ]
+    #    results = prompt_user_and_run(command_parts)
+
+    #def push_scratch(self, ids):
+
+    #    node = Node(ids)
+    #    if not node:
+    #        raise Exception(f'Node not found: {ids}')
+
+    #    tag = str(node.ids.get_tag())
+    #    rel_prod = self.production.relative_to(self.config.home)
+    #    loc_prod = self.production.relative_to(Path().absolute())
+
+    #    command_parts = ["rsync", "-avh",
+    #        f"{loc_prod}/{tag}*",
+    #        f"{hostname}:{rel_prod}/",
+    #        ]
+    #    results = prompt_user_and_run(command_parts)
 
 
 class Node:
@@ -159,6 +190,9 @@ class Node:
         S += n*'=' + '\n'
         return S
 
+    @property
+    def tag(self):
+        return self.ids.get_tag()
 
     def scan(self):
         """

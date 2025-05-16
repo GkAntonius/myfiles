@@ -155,6 +155,8 @@ class UserConfig(Config):
     def file_exists(self):
         return self.filename.exists()
 
+
+
 class ProjectConfig(UserConfig):
 
     project_defaults = {
@@ -178,6 +180,14 @@ class ProjectConfig(UserConfig):
     @property
     def local_data(self):
         return self.topdir / self['Local']['data']
+
+    @property
+    def local_scratch(self):
+        p = (self.global_scratch
+             / self['Local']['Production']
+             / self['Project']['name']
+            )
+        return p
 
     @property
     def file_exists(self):
