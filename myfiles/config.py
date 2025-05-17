@@ -178,16 +178,8 @@ class ProjectConfig(UserConfig):
         return self.projectsdir / self['Project']['name']
 
     @property
-    def local_data(self):
-        return self.topdir / self['Local']['data']
-
-    @property
-    def local_scratch(self):
-        p = (self.global_scratch
-             / self['Local']['Production']
-             / self['Project']['name']
-            )
-        return p
+    def filename(self):
+        return self.topdir / self._config_filename
 
     @property
     def file_exists(self):

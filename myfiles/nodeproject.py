@@ -14,12 +14,12 @@ class Project:
         self.remote = RemoteHosts()
         self.name = str(config['Project']['name'])
         self.topdir = config.topdir
-        self.local_data = self.topdir / config['Local']['data']
+        #self.local_data = self.topdir / config['Local']['data']
         #self.local_scratch = (self.config.global_scratch
         #                      / config['Global']['projects'])
-        self.production = self.topdir / config['Local']['production']
-        self.analysis = self.topdir / config['Local']['analysis']
-        self.results = self.topdir / config['Local']['results']
+        #self.production = self.topdir / config['Local']['production']
+        #self.analysis = self.topdir / config['Local']['analysis']
+        #self.results = self.topdir / config['Local']['results']
 
     def __str__(self):
         S = ''
@@ -39,6 +39,31 @@ class Project:
             S += f'    {p}\n'
         S += n*'=' + '\n'
         return S
+
+    @property
+    def local_data(self):
+        return self.topdir / self.config['Local']['data']
+
+    @property
+    def production(self):
+        return self.topdir / self.config['Local']['production']
+
+    @property
+    def analysis(self):
+        return self.topdir / self.config['Local']['analysis']
+
+    @property
+    def results(self):
+        return self.topdir / self.config['Local']['results']
+
+    @property
+    def scratch(self):
+        p = (self.config.global_scratch
+             / self.config.projectsdir.relative_to(self.config.home)
+             / self.config['Project']['name']
+             / self.config['Local']['production']
+            )
+        return p
 
     def iter_nodes(self):
         pass
@@ -87,35 +112,35 @@ class Project:
             ]
         results = prompt_user_and_run(command_parts)
 
-    #def pull_scratch(self, hostname, ids):
+    def pull_scratch(self, ids):
 
-    #    node = Node(ids)
+        node = Node(ids)
 
-    #    tag = str(node.ids.get_tag())
-    #    rel_prod = self.production.relative_to(self.config.home)
-    #    loc_prod = self.production.relative_to(Path().absolute())
+        tag = str(node.ids.get_tag())
+        source = self.scratch
+        dest = self.production.relative_to(self.topdir)
 
-    #    command_parts = ["rsync", "-avh",
-    #        f"{hostname}:{rel_prod}/{tag}*",
-    #        f"{loc_prod}/"
-    #        ]
-    #    results = prompt_user_and_run(command_parts)
+        command_parts = ["rsync", "-avhF",
+            f"{source}/{tag}*",
+            f"{dest}/"
+            ]
+        results = prompt_user_and_run(command_parts)
 
-    #def push_scratch(self, ids):
+    def push_scratch(self, ids):
 
-    #    node = Node(ids)
-    #    if not node:
-    #        raise Exception(f'Node not found: {ids}')
+        node = Node(ids)
+        if not node:
+            raise Exception(f'Node not found: {ids}')
 
-    #    tag = str(node.ids.get_tag())
-    #    rel_prod = self.production.relative_to(self.config.home)
-    #    loc_prod = self.production.relative_to(Path().absolute())
+        tag = str(node.ids.get_tag())
+        source = self.production.relative_to(self.topdir)
+        dest = self.scratch
 
-    #    command_parts = ["rsync", "-avh",
-    #        f"{loc_prod}/{tag}*",
-    #        f"{hostname}:{rel_prod}/",
-    #        ]
-    #    results = prompt_user_and_run(command_parts)
+        command_parts = ["rsync", "-avhF",
+            f"{source}/{tag}*",
+            f"{dest}/"
+            ]
+        results = prompt_user_and_run(command_parts)
 
 
 class Node:
