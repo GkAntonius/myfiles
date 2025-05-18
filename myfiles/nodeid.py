@@ -23,9 +23,6 @@ class NodeID(list):
             S += self.sep + self.sep.join(str(i) for i in self[1:])
         return S
 
-    def get_tag(self):
-        return str(self) + self.sep
-
     def __eq__(self, other):
         if len(self) != len(other):
             return False
@@ -59,6 +56,10 @@ class NodeID(list):
             return self
         cls = type(self)
         return cls(self[-n:])
+
+    @property
+    def tag(self):
+        return str(self) + self.sep
 
     @classmethod
     def from_path(cls, path=None):
@@ -113,7 +114,6 @@ class NodeID(list):
         for tok in basename.split(cls.sep):
             if tok.isdigit():
                 ids.append(int(tok))
-        x = basename.split(cls.sep)
         return cls(ids)
 
     from_str = read_ids
@@ -155,3 +155,15 @@ class NodeID(list):
 
         return directories, files
 
+    @classmethod
+    def strip_ids(cls, filepath):
+        """Return the basename of a file, stripped of any ids."""
+        basename = Path(filepath).name
+        parts = basename.split(cls.sep)
+        for i, part in enumerate(parts):
+            if not part.isdigit():
+                return cls.sep.join(parts[i:])
+        return ''
+
+    def make_filename(self, name):
+        return self.tag + name

@@ -37,6 +37,7 @@ def command_line_execution():
                    'check_remote',
                    'push_remote', 'pull_remote',
                    'push_scratch', 'pull_scratch',
+                   'make_anadir',
                    'save_results',
             ),
         )

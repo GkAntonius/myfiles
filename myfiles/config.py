@@ -239,7 +239,6 @@ class NodeConfig(ProjectConfig):
         'Node': {
             'name' : 'DefaultNodeName',
             'ndigids' : 3,
-            'depth' : 1,
             },
     }
 

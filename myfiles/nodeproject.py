@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 from .config import UserConfig, ProjectConfig, NodeConfig, RemoteHosts
 from .nodeid import NodeID
 from .util import prompt_user_and_run
@@ -14,12 +15,6 @@ class Project:
         self.remote = RemoteHosts()
         self.name = str(config['Project']['name'])
         self.topdir = config.topdir
-        #self.local_data = self.topdir / config['Local']['data']
-        #self.local_scratch = (self.config.global_scratch
-        #                      / config['Global']['projects'])
-        #self.production = self.topdir / config['Local']['production']
-        #self.analysis = self.topdir / config['Local']['analysis']
-        #self.results = self.topdir / config['Local']['results']
 
     def __str__(self):
         S = ''
@@ -65,18 +60,32 @@ class Project:
             )
         return p
 
-    def iter_nodes(self):
-        pass
+    def iter_dir_nodes(self, directory):
+        """
+        Look for nodes in a directory.
+        """
+        path = Path(directory)
+        for dirname in path.iterdir():
+            if not dirname.is_dir():
+                continue
+            node = Node.from_path(dirname, project=self)
+            if not node:
+                continue
+            yield node
 
-    def view(self):
-        """Find directories and nodes, and print out information."""
-        pass
+    def iter_production_nodes(self):
+        return self.iter_dir_nodes(self.production)
 
-    def create_anadir(self):
-        pass
+    def iter_analysis_nodes(self):
+        return self.iter_dir_nodes(self.analysis)
 
-    def sync_plots(self):
-        pass
+    def iter_results_nodes(self):
+        path = Path(self.results)
+        for fname in path.iterdir():
+            node = Node.from_path(fname)
+            if not node:
+                continue
+            yield node
 
     def pull_production_dir(self, hostname, ids):
         if hostname not in self.remote:
@@ -132,7 +141,7 @@ class Project:
         if not node:
             raise Exception(f'Node not found: {ids}')
 
-        tag = str(node.ids.get_tag())
+        tag = str(node.ids.tag)
         source = self.production.relative_to(self.topdir)
         dest = self.scratch
 
@@ -142,6 +151,14 @@ class Project:
             ]
         results = prompt_user_and_run(command_parts)
 
+    def copy_analysis_files_to_results(self, *args, **kwargs):
+        """
+        Look for files produced in analysis directory and copy them to
+        the results directory.
+        """
+        for node in self.iter_analysis_nodes():
+            node.scan_analysis()
+            node.copy_analysis_files_to_results(*args, **kwargs)
 
 class Node:
     """
@@ -151,12 +168,13 @@ class Node:
     - A production directory
     - An analysis directory
     """
-    def __init__(self, ids=None, config=None):
+    def __init__(self, ids=None, config=None, project=None):
 
         if config is None:
             self.config = NodeConfig()
         else:
             self.config = config
+
         self.name = self.config['Node']['name']
 
         if ids is None:
@@ -164,7 +182,10 @@ class Node:
         else:
             self.ids = NodeID(ids)
 
-        self.project = Project()
+        if project is None:
+            self.project = Project()
+        else:
+            self.project = project
 
         # Sub nodes
         self.nodes = []
@@ -182,13 +203,39 @@ class Node:
         #if not self.ids:
         #    raise Exception('Node has no id.')
 
-    def __bool__(self):
-        return bool(self.ids)
+    _name = NodeConfig.node_defaults['Node']['name']
+    @property
+    def name(self):
+        if self._name == NodeConfig.node_defaults['Node']['name']:
+            self._name = self.find_name()
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     @classmethod
     def from_path(cls, path='.', **kwargs):
-        ids = NodeId.from_path(path)
-        cls(ids, **kwargs)
+        ids = NodeID.from_path(path)
+        return cls(ids, **kwargs)
+
+    @property
+    def basename(self):
+        return self.ids.trim(1).tag + self.name
+
+    # GA: Not sure about this. The name in analysis doesnt need to match
+    #     the name in production...
+
+    @property
+    def production(self):
+        return self.project.production / self.basename
+
+    @property
+    def analysis(self):
+        return self.project.analysis / self.basename
+
+    def __bool__(self):
+        return bool(self.ids)
 
     def __str__(self):
         S = ''
@@ -214,10 +261,6 @@ class Node:
             S += f'    {p}\n'
         S += n*'=' + '\n'
         return S
-
-    @property
-    def tag(self):
-        return self.ids.get_tag()
 
     def scan(self):
         """
@@ -247,35 +290,51 @@ class Node:
 
     def scan_results(self):
         """
-        Look for matching files and directories in project's analysis dir.
+        Look for matching files and directories in project's results dir.
         """
         self.results_directories, self.results_files = (
             self.ids.scan_directory(self.project.results)
             )
 
-    @property
-    def basename(self):
-        base, rest = self.ids.partition(1)
-        return str(base) + '-' + self.name
+    def copy_analysis_files_to_results(self, exclude=('.py',), verbose=True):
+        """
+        Look for files produced in analysis directory and copy them to
+        the results directory.
+        """
+        if isinstance(exclude, str):
+            exclude = [exclude]
+        files_to_copy = []
+        for (dirpath, dirnames, filenames) in self.analysis.walk():
+            for filename in filenames:
+                skip = False
+                for ext in exclude:
+                    if filename.endswith(ext):
+                        skip = True
+                        break
+                if skip:
+                    continue
 
-    @property
-    def production(self):
-        return self.project.production / self.basename
+                filepath = dirpath / filename
+                files_to_copy.append(filepath)
 
-    @property
-    def analysis(self):
-        return self.project.analysis / self.basename
+        for filename in files_to_copy:
+            ids = NodeID.from_path(filename)
+            name = ids.strip_ids(filename)
+            results_filename = ids.make_filename(name)
+            source = filename
+            target = self.project.results / results_filename
+            if not target.exists():
+                print(f'Copying: {source} --> {target}')
+                shutil.copy(source, target)
 
-    def find_production_dir(self, ids=None):
+        return
+
+
+    def find_production_dir(self):
         """
         Search for a production directory in node that matches exactly
         some ids or the node's ids.
         """ 
-        if ids is None:
-            ids = self.ids
-        else:
-            ids = NodeID(ids)
-
         if not self.production_directories:
             self.scan_production()
 
@@ -283,7 +342,7 @@ class Node:
         for path in self.production_directories:
             pathID = NodeID.from_path(path)
 
-            if pathID == ids:
+            if pathID == self.ids:
                 found.append(str(path))
 
         if not found:
@@ -293,6 +352,19 @@ class Node:
             raise Exception(S)
 
         return found[0]
+
+    def find_name(self):
+        production_dir = self.find_production_dir()
+        basename = Path(production_dir).name
+        assert basename.startswith(self.ids.tag), f'Unexpected directory name: {basename}'
+        name = basename.split(self.ids.tag)[1]
+        self.name = name
+        return name
+
+    def make_analysis_dir(self, verbose=True):
+        if verbose:
+            print(self.analysis)
+        self.analysis.mkdir(exist_ok=True)
 
     def make_filename(self, basename, ext):
         return str(self.ids) + '-' + basename
