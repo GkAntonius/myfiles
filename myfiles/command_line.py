@@ -15,11 +15,11 @@ def command_line_execution():
     
     parser.add_argument(
         'command', metavar='command',
-        help= dedent(
+        help= (
         """\
         Execute one of these commands:
             check_config
-            heck_project
+            check_project
             check_node
             show_nodes
             show_remote
