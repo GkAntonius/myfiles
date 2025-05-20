@@ -2,19 +2,20 @@ from .. import UserConfig, ProjectConfig, RemoteHosts
 from .. import Node, Project
 
 def check_config():
+
     userconfig = UserConfig()
-    projconfig = ProjectConfig()
-    rh = RemoteHosts()
-
-    print(projconfig)
-    print(rh)
-
     if not userconfig.file_exists:
         userconfig.write_config_file()
+
+    projconfig = ProjectConfig()
+    print(projconfig)
 
     if not projconfig.file_exists:
         if projconfig.topdir.exists():
             projconfig.write_config_file()
+
+    rh = RemoteHosts()
+    print(rh)
 
 
 def check_user_config():

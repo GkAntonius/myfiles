@@ -37,6 +37,7 @@ def find_production_dir(ids=None):
     return node.find_production_dir(ids)
 
 find_calc_dir = find_production_dir
+get_production_dir = find_production_dir
 
 def get_workdir(name, ids=None):
     if ids is None:
@@ -44,6 +45,7 @@ def get_workdir(name, ids=None):
         ids = NodeID.from_path()
         if m := len(pids) < len(ids):
             _, ids = ids.partition(m)
+            ids.ndigits = 1
     else:
         ids = NodeID(ids)
 

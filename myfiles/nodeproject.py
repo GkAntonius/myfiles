@@ -92,15 +92,13 @@ class Project:
             raise Exception(f'Unknown host: {hostname}')
 
         node = Node(ids)
-
-        tag = str(node.ids.get_tag())
+        tag = node.ids.tag
         rel_prod = self.production.relative_to(self.config.home)
         loc_prod = self.production.relative_to(Path().absolute())
+        source = f"{hostname}:{rel_prod}/{tag}*"
+        dest = f"{loc_prod}/"
 
-        command_parts = ["rsync", "-avh",
-            f"{hostname}:{rel_prod}/{tag}*",
-            f"{loc_prod}/"
-            ]
+        command_parts = ["rsync", "-avh", source, dest]
         results = prompt_user_and_run(command_parts)
 
     def push_production_dir(self, hostname, ids):
@@ -111,7 +109,7 @@ class Project:
         if not node:
             raise Exception(f'Node not found: {ids}')
 
-        tag = str(node.ids.get_tag())
+        tag = node.ids.tag
         rel_prod = self.production.relative_to(self.config.home)
         loc_prod = self.production.relative_to(Path().absolute())
 
@@ -119,7 +117,8 @@ class Project:
             f"{loc_prod}/{tag}*",
             f"{hostname}:{rel_prod}/",
             ]
-        results = prompt_user_and_run(command_parts)
+
+        result = prompt_user_and_run(command_parts)
 
     def pull_scratch(self, ids):
 

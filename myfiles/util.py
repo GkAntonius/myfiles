@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 def prompt_user_and_run(command_parts):
@@ -7,10 +8,15 @@ def prompt_user_and_run(command_parts):
     print(command)
     answer = input('Do you want to proceed? [y/N]: ')
     if answer.lower().startswith('y'):
-        result = subprocess.run(
-            command_parts,
-            capture_output=False,
-            text=True)
+
+
+        result = os.system(command)
+
+        # GA: This one doesnt work! Why??
+        #result = subprocess.run(command_parts)
+
+
+            #capture_output=True,text=True)
             # Check the return code
             #print("Return Code:", result.returncode)
             # Print the output
@@ -20,4 +26,4 @@ def prompt_user_and_run(command_parts):
             # Check for errors
             #if result.returncode != 0:
             #    print("Command failed.")
-        return results
+        return result

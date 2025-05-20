@@ -4,5 +4,5 @@ from .nodeproject import *
 from .data import *
 from .helper_functions import *
 from .interface import *
-from .command_line import *
-from . import __main__
+#from . import command_line
+#from .command_line import *
