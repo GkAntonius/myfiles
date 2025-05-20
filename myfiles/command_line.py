@@ -27,6 +27,8 @@ def command_line_execution():
             pull_remote
             push_scratch
             pull_scratch
+            push_global_data
+            push_local_data
             make_anadir
             save_results
         """),
@@ -37,6 +39,7 @@ def command_line_execution():
                    'check_remote',
                    'push_remote', 'pull_remote',
                    'push_scratch', 'pull_scratch',
+                   'push_global_data', 'push_local_data',
                    'make_anadir',
                    'save_results',
             ),

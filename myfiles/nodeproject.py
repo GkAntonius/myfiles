@@ -37,19 +37,19 @@ class Project:
 
     @property
     def local_data(self):
-        return self.topdir / self.config['Local']['data']
+        return self.config.local_data
 
     @property
     def production(self):
-        return self.topdir / self.config['Local']['production']
+        return self.config.production
 
     @property
     def analysis(self):
-        return self.topdir / self.config['Local']['analysis']
+        return self.config.analysis
 
     @property
     def results(self):
-        return self.topdir / self.config['Local']['results']
+        return self.config.results
 
     @property
     def scratch(self):
@@ -98,7 +98,7 @@ class Project:
         source = f"{hostname}:{rel_prod}/{tag}*"
         dest = f"{loc_prod}/"
 
-        command_parts = ["rsync", "-avh", source, dest]
+        command_parts = ["rsync", "-avhF", source, dest]
         results = prompt_user_and_run(command_parts)
 
     def push_production_dir(self, hostname, ids):
@@ -113,7 +113,7 @@ class Project:
         rel_prod = self.production.relative_to(self.config.home)
         loc_prod = self.production.relative_to(Path().absolute())
 
-        command_parts = ["rsync", "-avh",
+        command_parts = ["rsync", "-avhF",
             f"{loc_prod}/{tag}*",
             f"{hostname}:{rel_prod}/",
             ]
@@ -158,6 +158,34 @@ class Project:
         for node in self.iter_analysis_nodes():
             node.scan_analysis()
             node.copy_analysis_files_to_results(*args, **kwargs)
+
+    def push_local_data(self, hostname):
+        if hostname not in self.remote:
+            raise Exception(f'Unknown host: {hostname}')
+
+        source = self.local_data
+        dest = self.local_data.relative_to(self.config.home)
+
+        command_parts = ["rsync", "-avhF",
+            f"{source}/",
+            f"{hostname}:{dest}",
+            ]
+
+        return prompt_user_and_run(command_parts)
+
+    def push_global_data(self, hostname):
+        if hostname not in self.remote:
+            raise Exception(f'Unknown host: {hostname}')
+
+        source = self.global_data
+        dest = self.global_data.relative_to(self.config.home)
+
+        command_parts = ["rsync", "-avhF",
+            f"{source}/",
+            f"{hostname}:{dest}",
+            ]
+
+        return prompt_user_and_run(command_parts)
 
 class Node:
     """

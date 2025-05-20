@@ -70,7 +70,7 @@ class Config(dict, abc.ABC):
                 fnames.append(str(p))
             if parent.resolve() == home.resolve():
                 break
-        if home not in workdir.parents:
+        if home not in workdir.parents and home != workdir:
             p = home / cls._config_filename
             if p.exists():
                 fnames.append(str(p))
@@ -182,6 +182,26 @@ class ProjectConfig(UserConfig):
         return self.topdir / self._config_filename
 
     @property
+    def local_data(self):
+        return self.topdir / self['Local']['data']
+
+    @property
+    def production(self):
+        return self.topdir / self['Local']['production']
+
+    @property
+    def analysis(self):
+        return self.topdir / self['Local']['analysis']
+
+    @property
+    def results(self):
+        return self.topdir / self['Local']['results']
+
+    @property
+    def local_scratch(self):
+        return self.global_scratch / self.topdir.relative_to(self.home)
+
+    @property
     def file_exists(self):
         topdir = self.find_topdir()
         if not topdir.exists():
@@ -219,12 +239,13 @@ class ProjectConfig(UserConfig):
                 name = p.parts[0]
                 self['Project']['name'] = name
             except ValueError:
-                msg  = 20 * '=' + '\n'
-                msg += f'Error: Make sure you have a valid {self._config_filename} file.\n'
-                msg += 'Current path: ' + str(Path().absolute()) + '\n'
-                msg += 20 * '=' + '\n'
-                print(msg)
-                raise
+                pass
+                #msg  = 20 * '=' + '\n'
+                #msg += f'Error: Make sure you have a valid {self._config_filename} file.\n'
+                #msg += 'Current path: ' + str(Path().absolute()) + '\n'
+                #msg += 20 * '=' + '\n'
+                #print(msg)
+                #raise
                 
 
         if not self.topdir.exists():

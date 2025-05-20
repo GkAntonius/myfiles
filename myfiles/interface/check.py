@@ -7,12 +7,15 @@ def check_config():
     if not userconfig.file_exists:
         userconfig.write_config_file()
 
-    projconfig = ProjectConfig()
-    print(projconfig)
+    try:
+        projconfig = ProjectConfig()
+        print(projconfig)
 
-    if not projconfig.file_exists:
-        if projconfig.topdir.exists():
-            projconfig.write_config_file()
+        if not projconfig.file_exists:
+            if projconfig.topdir.exists():
+                projconfig.write_config_file()
+    except:
+        pass
 
     rh = RemoteHosts()
     print(rh)

@@ -16,3 +16,11 @@ def pull_scratch(ids):
 def push_scratch(ids):
     proj = Project()
     proj.push_scratch(ids)
+
+def push_local_data(hostname):
+    proj = Project()
+    proj.push_local_data(hostname)
+
+def push_glocal_data(hostname):
+    proj = Project()
+    proj.push_global_data(hostname)
