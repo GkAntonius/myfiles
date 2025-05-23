@@ -29,7 +29,12 @@ class DataDir:
         else:
             directories = []
             counts = []
-            for (dirpath, dirnames, filenames) in self.pseudo_dir.walk():
+            # ---------------------
+            # GA: Temporarily backtracking to python 3.11 compatible version.
+            #for (dirpath, dirnames, filenames) in self.pseudo_dir.walk():
+            for root, dirnames, filenames in os.walk(str(self.pseudo_dir)):
+                dirpath = Path(root)
+            # ---------------------
                 if not dirnames:
                     continue
                 counts = []
@@ -92,7 +97,12 @@ class DataDir:
         #    raise Exception(f'File not found: {path}')
         #return str(path.absolute())
 
-        for ddf in self.structure_dir.walk():
+        # ---------------------
+        # GA: Temporarily backtracking to python 3.11 compatible version.
+        #for ddf in self.structure_dir.walk():
+        for root, dirnames, filenames in os.walk(str(self.structure_dir)):
+            dirpath = Path(root)
+        # ---------------------
             (dirpath, dirnames, filenames) = ddf
             for fname in filenames:
                 if fname == filename:
