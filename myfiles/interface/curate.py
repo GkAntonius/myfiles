@@ -1,5 +1,8 @@
 from .. import Node, Project
 
+def newproj(name):
+    return Project.new_project(name)
+
 def make_anadir(ids):
     node = Node(ids)
     node.make_analysis_dir(verbose=True)

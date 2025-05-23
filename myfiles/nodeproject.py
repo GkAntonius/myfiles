@@ -53,12 +53,7 @@ class Project:
 
     @property
     def scratch(self):
-        p = (self.config.global_scratch
-             / self.config.projectsdir.relative_to(self.config.home)
-             / self.config['Project']['name']
-             / self.config['Local']['production']
-            )
-        return p
+        return self.config.local_scratch
 
     def iter_dir_nodes(self, directory):
         """
@@ -113,11 +108,8 @@ class Project:
         rel_prod = self.production.relative_to(self.config.home)
         loc_prod = self.production.relative_to(Path().absolute())
 
-        command_parts = ["rsync", "-avhF",
-            f"{loc_prod}/{tag}*",
-            f"{hostname}:{rel_prod}/",
-            ]
-
+        command_parts = ["rsync", "-avhF", f"{loc_prod}/{tag}*",
+                                           f"{hostname}:{rel_prod}/"]
         result = prompt_user_and_run(command_parts)
 
     def pull_scratch(self, ids):
@@ -128,10 +120,7 @@ class Project:
         source = self.scratch
         dest = self.production.relative_to(self.topdir)
 
-        command_parts = ["rsync", "-avhF",
-            f"{source}/{tag}*",
-            f"{dest}/"
-            ]
+        command_parts = ["rsync", "-avhF", f"{source}/{tag}*", f"{dest}/"]
         results = prompt_user_and_run(command_parts)
 
     def push_scratch(self, ids):
@@ -144,10 +133,7 @@ class Project:
         source = self.production.relative_to(self.topdir)
         dest = self.scratch
 
-        command_parts = ["rsync", "-avhF",
-            f"{source}/{tag}*",
-            f"{dest}/"
-            ]
+        command_parts = ["rsync", "-avhF", f"{source}/{tag}*", f"{dest}/"]
         results = prompt_user_and_run(command_parts)
 
     def copy_analysis_files_to_results(self, *args, **kwargs):
@@ -166,11 +152,7 @@ class Project:
         source = self.local_data
         dest = self.local_data.relative_to(self.config.home)
 
-        command_parts = ["rsync", "-avhF",
-            f"{source}/",
-            f"{hostname}:{dest}",
-            ]
-
+        command_parts = ["rsync", "-avhF", f"{source}/", f"{hostname}:{dest}"]
         return prompt_user_and_run(command_parts)
 
     def push_global_data(self, hostname):
@@ -180,12 +162,27 @@ class Project:
         source = self.global_data
         dest = self.global_data.relative_to(self.config.home)
 
-        command_parts = ["rsync", "-avhF",
-            f"{source}/",
-            f"{hostname}:{dest}",
-            ]
-
+        command_parts = ["rsync", "-avhF", f"{source}/", f"{hostname}:{dest}"]
         return prompt_user_and_run(command_parts)
+
+    @classmethod
+    def new_project(cls, name, mkdir=True):
+        config = ProjectConfig(path=Path('~'))
+        config.name = name
+        new = cls(config=config)
+
+        if mkdir:
+            if new.topdir.exists():
+                import warnings
+                warnings.warn('Project already exists: {new.topdir}')
+
+            for dirname in (new.topdir, new.local_data, new.production,
+                            new.analysis, new.results):
+                print(dirname)
+                dirname.mkdir(exists_ok=True)
+
+        return new
+
 
 class Node:
     """

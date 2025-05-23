@@ -31,6 +31,7 @@ def command_line_execution():
             push_local_data
             make_anadir
             save_results
+            newproj
         """),
         default='check_project',
         #nargs = '*',
@@ -42,6 +43,7 @@ def command_line_execution():
                    'push_global_data', 'push_local_data',
                    'make_anadir',
                    'save_results',
+                   'newproj',
             ),
         )
     

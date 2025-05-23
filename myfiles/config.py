@@ -155,6 +155,8 @@ class UserConfig(Config):
     def file_exists(self):
         return self.filename.exists()
 
+# =========================================================================== #
+# =========================================================================== #
 
 
 class ProjectConfig(UserConfig):
@@ -176,6 +178,14 @@ class ProjectConfig(UserConfig):
     @property
     def topdir(self):
         return self.projectsdir / self['Project']['name']
+
+    @property
+    def name(self):
+        return self['Project']['name']
+
+    @name.setter
+    def name(self, value):
+        self['Project']['name'] = value
 
     @property
     def filename(self):
