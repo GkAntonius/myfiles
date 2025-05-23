@@ -179,7 +179,7 @@ class Project:
             for dirname in (new.topdir, new.local_data, new.production,
                             new.analysis, new.results):
                 print(dirname)
-                dirname.mkdir(exists_ok=True)
+                dirname.mkdir(exist_ok=True)
 
         return new
 
@@ -328,7 +328,13 @@ class Node:
         if isinstance(exclude, str):
             exclude = [exclude]
         files_to_copy = []
-        for (dirpath, dirnames, filenames) in self.analysis.walk():
+        # ---------------------
+        # GA: Temporarily backtracking to python 3.11 compatible version.
+        #for (dirpath, dirnames, filenames) in self.analysis.walk():
+        for root, dirnames, filenames in os.walk(str(self.analysis)):
+            dirpath = Path(root)
+        # ---------------------
+
             for filename in filenames:
                 skip = False
                 for ext in exclude:
@@ -338,8 +344,7 @@ class Node:
                 if skip:
                     continue
 
-                filepath = dirpath / filename
-                files_to_copy.append(filepath)
+                files_to_copy.append(dirpath / filename)
 
         for filename in files_to_copy:
             ids = NodeID.from_path(filename)

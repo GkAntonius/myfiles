@@ -7,12 +7,13 @@ class NodeID(list):
     ndigits=3
 
     def __init__(self, ids: [int]):
+
         if isinstance(ids, int):
-            super().__init__([ids])
+            ids = [ids]
         elif isinstance(ids, str):
-            super().__init__([int(ids)])
-        else:
-            super().__init__(ids)
+            ids = [int(ids)]
+
+        super().__init__(ids)
 
     def __str__(self):
         S = ''
@@ -126,7 +127,12 @@ class NodeID(list):
         directories = []
         files = []
 
-        for (dirpath, dirnames, filenames) in Path(path).walk():
+        # ---------------------
+        # GA: Temporarily backtracking to python 3.11 compatible version.
+        #for (dirpath, dirnames, filenames) in Path(path).walk():
+        for root, dirnames, filenames in os.walk(str(path)):
+            dirpath = Path(root)
+        # ---------------------
 
             for filename in filenames:
                 path = dirpath / filename
