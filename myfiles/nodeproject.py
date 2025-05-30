@@ -124,7 +124,7 @@ class Project:
 
         node = Node(ids)
 
-        tag = str(node.ids.get_tag())
+        tag = str(node.ids.tag)
         source = self.scratch
         dest = self.production.relative_to(self.topdir)
 
