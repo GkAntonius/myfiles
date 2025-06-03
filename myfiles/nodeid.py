@@ -127,12 +127,10 @@ class NodeID(list):
         directories = []
         files = []
 
-        # ---------------------
         # GA: Temporarily backtracking to python 3.11 compatible version.
         #for (dirpath, dirnames, filenames) in Path(path).walk():
         for root, dirnames, filenames in os.walk(str(path)):
             dirpath = Path(root)
-        # ---------------------
 
             for filename in filenames:
                 path = dirpath / filename

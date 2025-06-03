@@ -1,11 +1,11 @@
-
 from pathlib import Path
 from argparse import ArgumentParser
 from textwrap import dedent
 
-from .config import UserConfig, ProjectConfig
-from .nodeproject import Project, Node, NodeID
-from .data import DataDirs
+from ..config import UserConfig, ProjectConfig
+from ..nodeproject import Project, Node, NodeID
+from ..util import ScanResult
+from ..data import DataDirs
 
 def get_ids(fname=None, n=None):
     """Scan the current file or path name and return ids."""
@@ -23,21 +23,26 @@ def get_structure(filename):
     """Return absolute paths of a structure."""
     return DataDirs().get_structure(filename)
 
-def get_pseudo(psps, subdir=None):
-    """Return list of absolute psp paths."""
-    return DataDirs().get_pseudo(psps, subdir=subdir)
-
 def get_pseudo_dir(subdir=None, keywords=()):
     """Return absolute paths of a pseudopotential directory."""
     return DataDirs().get_pseudo_dir(subdir=subdir, keywords=keywords)
 
-def find_production_dir(ids=None):
+def get_pseudopotentials(*args, **kwargs):
+    """
+    Return list of absolute psp paths.
+    """
+    return DataDirs().get_pseudopotentials(*args, **kwargs)
+
+get_pseudos = get_pseudopotentials
+get_pseudo = get_pseudopotentials
+
+def get_production_dir(ids=None):
     """Find a production directory matching some ids."""
     node = Node(ids=ids)
     return node.find_production_dir(ids)
 
-find_calc_dir = find_production_dir
-get_production_dir = find_production_dir
+find_production_dir = get_production_dir
+find_calc_dir = get_production_dir
 
 def get_workdir(name, ids=None):
     if ids is None:
@@ -112,3 +117,12 @@ def make_plot_fname(ids, where='.', tag='', ext='.pdf', prefix='plot',
     return make_data_fname(ids, where, tag, ext, prefix, **kwargs)
 
 
+def get_datafile(filename):
+    data = DataDirs()
+    result, datafile = data.get_datafile(filename)
+    if result == ScanResult.success:
+        return datafile
+    elif result == ScanResult.no_scan:
+        raise Exception('No data directory to scan.')
+    else:
+        raise Exception(f'File not found: {filename}')

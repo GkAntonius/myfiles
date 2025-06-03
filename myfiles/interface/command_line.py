@@ -1,6 +1,7 @@
 from textwrap import dedent
 from argparse import ArgumentParser
-from . import interface
+
+from . import cli_functions
 
 def command_line_execution():
 
@@ -58,11 +59,11 @@ def command_line_execution():
     args, other_args = parser.parse_known_args()
     func_name = args.command
 
-    if func_name not in dir(interface):
+    if func_name not in dir(cli_functions):
         print('Command not found: {func_name}')
         return
 
-    func = getattr(interface, func_name)
+    func = getattr(cli_functions, func_name)
     result = func(*other_args)
 
     #g = globals()

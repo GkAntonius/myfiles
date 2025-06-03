@@ -1,6 +1,15 @@
 import os
 import subprocess
 
+from enum import Enum, auto
+class ScanResult(Enum):
+        success = auto()
+        failure = auto()
+        no_scan = auto()
+        #file_note_found = auto()
+        #no_files = auto()
+        #no_directories = auto()
+
 def prompt_user_and_run(command_parts):
 
     command = ' '.join(command_parts)
