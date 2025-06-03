@@ -117,7 +117,7 @@ class Project:
         node = Node(ids)
 
         tag = str(node.ids.tag)
-        source = self.scratch
+        source = self.scratch / self.production.relative_to(self.topdir)
         dest = self.production.relative_to(self.topdir)
 
         command_parts = ["rsync", "-avhF", f"{source}/{tag}*", f"{dest}/"]
@@ -131,7 +131,7 @@ class Project:
 
         tag = str(node.ids.tag)
         source = self.production.relative_to(self.topdir)
-        dest = self.scratch
+        dest = self.scratch / self.production.relative_to(self.topdir)
 
         command_parts = ["rsync", "-avhF", f"{source}/{tag}*", f"{dest}/"]
         results = prompt_user_and_run(command_parts)
