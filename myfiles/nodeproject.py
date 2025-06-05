@@ -118,7 +118,7 @@ class Project:
 
         tag = str(node.ids.tag)
         source = self.scratch / self.production.relative_to(self.topdir)
-        dest = self.production.relative_to(self.topdir)
+        dest = self.production
 
         command_parts = ["rsync", "-avhF", f"{source}/{tag}*", f"{dest}/"]
         results = prompt_user_and_run(command_parts)
@@ -130,7 +130,7 @@ class Project:
             raise Exception(f'Node not found: {ids}')
 
         tag = str(node.ids.tag)
-        source = self.production.relative_to(self.topdir)
+        source = self.production
         dest = self.scratch / self.production.relative_to(self.topdir)
 
         command_parts = ["rsync", "-avhF", f"{source}/{tag}*", f"{dest}/"]
