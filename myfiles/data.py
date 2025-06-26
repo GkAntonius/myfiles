@@ -178,7 +178,7 @@ class DataDirs(list):
             result, filepath = datadir.get_structure(filename)
             if result == ScanResult.success:
                 return filepath
-        if result == Scanresult.no_scan:
+        if result == ScanResult.no_scan:
             raise Exception('No data directory to scan.')
         else:
             raise Exception(f'File not found: {filename}')
@@ -212,7 +212,7 @@ class DataDirs(list):
             if result == ScanResult.success:
                 return path
 
-        if result == Scanresult.no_scan:
+        if result == ScanResult.no_scan:
             raise Exception('No data directory to scan.')
         else:
             raise Exception(f'Directory not found: {args}')
@@ -224,7 +224,7 @@ class DataDirs(list):
             if result == ScanResult.success:
                 return result, filepath
         return result, self.dirname
-        #if result == Scanresult.no_scan:
+        #if result == ScanResult.no_scan:
         #    raise Exception('No data directory to scan.')
         #else:
         #    raise Exception(f'File not found: {filename}')
