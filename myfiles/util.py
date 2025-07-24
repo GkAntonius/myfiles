@@ -10,20 +10,26 @@ class ScanResult(Enum):
         #no_files = auto()
         #no_directories = auto()
 
+def run_command(command_parts):
+    command = ' '.join(command_parts)
+    return os.system(command)
+
+def prompt_user_confirmation(message):
+    print(message)
+    answer = input('Do you want to proceed? [y/N]: ')
+    if answer.lower().startswith('y'):
+        return True
+    return False
+
 def prompt_user_and_run(command_parts):
 
     command = ' '.join(command_parts)
-    print('Will execute the following command:')
-    print(command)
-    answer = input('Do you want to proceed? [y/N]: ')
-    if answer.lower().startswith('y'):
-
-
+    message = 'Will execute the following command:\n' + command
+    if prompt_user_confirmation(message):
         result = os.system(command)
 
         # GA: This one doesnt work! Why??
         #result = subprocess.run(command_parts)
-
 
             #capture_output=True,text=True)
             # Check the return code

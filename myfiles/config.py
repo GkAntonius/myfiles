@@ -4,6 +4,8 @@ from copy import copy, deepcopy
 import json
 import abc
 
+from .util import prompt_user_and_run, run_command, prompt_user_confirmation
+
 class Config(dict, abc.ABC):
 
     _config_filename = '.myfilesrc'
@@ -152,8 +154,37 @@ class UserConfig(Config):
         return Path(self['Global']['data']).expanduser().absolute()
 
     @property
+    def global_scratch_projects(self):
+        return self.global_scratch / self.projectsdir.relative_to(self.home)
+
+    @property
+    def global_scratch_data(self):
+        return self.global_scratch / self.global_data.relative_to(self.home)
+
+    @property
     def file_exists(self):
         return self.filename.exists()
+
+    def make_global_dirs(self):
+        todo = []
+        for directory in (self.projectsdir,
+                          self.global_scratch,
+                          self.global_data,
+                          self.global_scratch_projects,
+                          self.global_scratch_data,
+                            ):
+            if not directory.exists():
+                todo.append(directory)
+
+        if not todo:
+            return
+
+        msg = 'The following directories will be created:\n'
+        msg += '\n'.join([str(d) for d in todo])
+        prompt_user_confirmation(msg)
+        for d in todo:
+            d.mkdir(exist_ok=True)
+                
 
 # =========================================================================== #
 # =========================================================================== #
@@ -212,6 +243,14 @@ class ProjectConfig(UserConfig):
         return self.global_scratch / self.topdir.relative_to(self.home)
 
     @property
+    def scratch_production(self):
+        return self.local_scratch / self.production.relative_to(self.topdir)
+
+    @property
+    def scratch_analysis(self):
+        return self.local_scratch / self.analysis.relative_to(self.topdir)
+
+    @property
     def file_exists(self):
         topdir = self.find_topdir()
         if not topdir.exists():
@@ -262,6 +301,31 @@ class ProjectConfig(UserConfig):
             print(f'Warning: top directory does not exist:\n {topdir}')
 
         return self.topdir
+
+    def make_directories(self):
+        todo = []
+        for directory in (self.topdir, self.local_data, self.production,
+                        self.analysis, self.results, self.local_scratch,
+                        self.scratch_production):
+            if not directory.exists():
+                todo.append(directory)
+
+        if not todo:
+            return
+
+        msg = 'The following directories will be created:\n'
+        msg += '\n'.join([str(d) for d in todo])
+        prompt_user_confirmation(msg)
+        for d in todo:
+            d.mkdir(exist_ok=True)
+
+    def make_scratch_link(self):
+        source = self.local_scratch 
+        dest = self.topdir / 'scratch'
+
+        command_parts = ["ln", "-nsf", str(source), str(dest)]
+        return prompt_user_and_run(command_parts)
+
 
 
 class NodeConfig(ProjectConfig):

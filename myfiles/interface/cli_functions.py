@@ -50,8 +50,29 @@ class CLIfunctionWithID(CLIfunction):
         parser.add_argument('ids', type=int, nargs='+', help='Node ID.')
         return parser
 
+class CLIfunctionWithRsync(CLIfunction):
+    """Base class for functions that operate on a node ID."""
 
-class CLIfunctionWithRemote(CLIfunction):
+    def add_parser(self, sub):
+        parser = super().add_parser(sub)
+        parser.add_argument('-f', '--files_only', action='store_true',
+                            help='Only sync files.')
+        parser.add_argument('-L', '--level', type=int, default=-1,
+                            help='Sync depth.')
+        parser.add_argument('-n', '--dry_run', action='store_true',
+                            help='Do not actually perform the sync.')
+        return parser
+
+    def get_rsync_kwargs(self, args):
+        kwargs = dict(
+            files_only=args.files_only,
+            level=args.level,
+            dry_run=args.dry_run,
+            )
+        return kwargs
+
+
+class CLIfunctionWithRemote(CLIfunctionWithID, CLIfunctionWithRsync):
     """Base class for functions that operate on a remote host."""
 
     def add_parser(self, sub):
@@ -67,27 +88,10 @@ from .. import UserConfig, ProjectConfig, RemoteHosts
 from .. import Node, Project
 
 # =========================================================================== #
-
-class check_config(CLIfunction):
-    """Print out configuration."""
-    def __call__(self, args):
-
-        userconfig = UserConfig()
-        if not userconfig.file_exists:
-            userconfig.write_config_file()
-
-        try:
-            projconfig = ProjectConfig()
-            print(projconfig)
-
-            if not projconfig.file_exists:
-                if projconfig.topdir.exists():
-                    projconfig.write_config_file()
-        except:
-            pass
-
-        rh = RemoteHosts()
-        print(rh)
+"""
+Each function below is callable from command line.
+"""
+# =========================================================================== #
 
 class check_remote(CLIfunction):
     """Print out remote hosts."""
@@ -95,12 +99,6 @@ class check_remote(CLIfunction):
         rh = RemoteHosts()
         print(rh)
 
-class check_project(CLIfunction):
-    """Display project information."""
-    def __call__(self, args):
-        proj = Project()
-        print(proj)
-    
 class check_user_config(CLIfunction):
     """Print out user configuration."""
     def __call__(self, args):
@@ -108,6 +106,7 @@ class check_user_config(CLIfunction):
         print(rc)
         if not rc.file_exists:
             rc.write_config_file()
+        rc.make_global_dirs()
 
 class check_project_config(CLIfunction):
     """Print out project configuration."""
@@ -116,7 +115,21 @@ class check_project_config(CLIfunction):
         print(rc)
         if not rc.file_exists:
             rc.write_config_file()
+        rc.make_directories()
 
+class check_config(CLIfunction):
+    """Print out configuration."""
+    def __call__(self, args):
+        for func in (check_user_config, check_project_config):
+            f = func()
+            f(args)
+
+class check_project(CLIfunction):
+    """Display project information."""
+    def __call__(self, args):
+        proj = Project()
+        print(proj) 
+    
 class check_node(CLIfunctionWithID):
     """Print out information about a node."""
 
@@ -147,38 +160,43 @@ class pull_remote(CLIfunctionWithRemote, CLIfunctionWithID):
     """Pull files from a remote host."""
     def __call__(self, args):
         proj = Project()
-        proj.pull_production_dir(args.hostname, args.ids)
+        kwargs = self.get_rsync_kwargs(args)
+        proj.pull_production_dir(args.hostname, args.ids, **kwargs)
 
 class push_remote(CLIfunctionWithRemote, CLIfunctionWithID):
     """Push files to a remote host."""
     def __call__(self, args):
         proj = Project()
-        proj.push_production_dir(args.hostname, args.ids)
+        kwargs = self.get_rsync_kwargs(args)
+        proj.push_production_dir(args.hostname, args.ids, **kwargs)
 
-class pull_scratch(CLIfunctionWithID):
+class pull_scratch(CLIfunctionWithID, CLIfunctionWithRsync):
     """Pull files from scratch directory."""
     def __call__(self, args):
         proj = Project()
-        proj.pull_scratch(args.ids)
+        kwargs = self.get_rsync_kwargs(args)
+        proj.pull_scratch(args.ids, **kwargs)
 
-class push_scratch(CLIfunctionWithID):
+class push_scratch(CLIfunctionWithID, CLIfunctionWithRsync):
     """Push files to scratch directory."""
     def __call__(self, args):
         proj = Project()
-        proj.push_scratch(args.ids)
+        kwargs = self.get_rsync_kwargs(args)
+        proj.push_scratch(args.ids, **kwargs)
 
 class push_local_data(CLIfunctionWithRemote):
     """Push local data to a remote host."""
-    def __call__(self, args):
+    def __call__(self, args, **kwargs):
         proj = Project()
-        proj.push_production_dir(args.hostname, args.ids)
-        proj.push_local_data(args.hostname)
+        kwargs = self.get_rsync_kwargs(args)
+        proj.push_local_data(args.hostname, **kwargs)
 
 class push_global_data(CLIfunctionWithRemote):
     """Push global data to a remote host."""
-    def __call__(self, args):
+    def __call__(self, args, **kwargs):
         proj = Project()
-        proj.push_global_data(args.hostname)
+        kwargs = self.get_rsync_kwargs(args)
+        proj.push_global_data(args.hostname, **kwargs)
 
 # =========================================================================== #
 # Moving data
@@ -196,3 +214,10 @@ class save_results(CLIfunction):
     def __call__(self, args):
         project = Project()
         project.copy_analysis_files_to_results()
+
+
+class scratchlink(CLIfunction):
+    """Create a directory in analysis folder to match one in the production folder."""
+    def __call__(self, args):
+        project = Project()
+        project.make_scratch_link()
