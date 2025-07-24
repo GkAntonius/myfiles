@@ -40,6 +40,9 @@ class NodeID(list):
                 return False
         return True
 
+    #def __bool__(self):
+    #    return (len(self) > 0)
+
     def trim(self, n):
         if n > len(self):
             return self
