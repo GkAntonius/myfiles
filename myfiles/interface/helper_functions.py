@@ -73,6 +73,8 @@ def get_filename(name, ids=None, ext='', where='.', sep='-'
     filename = f'{ids}{ids.sep}{basename}'
     return Path(where) / filename
 
+make_filename = get_filename
+
 # GA: Not sure I will keep the following.
 
 def make_data_fname(ids, where='.', tag='', ext='.dat', prefix='data',
