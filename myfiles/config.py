@@ -201,6 +201,10 @@ class ProjectConfig(UserConfig):
     header_tag = 'myfiles project confiuration'
 
     @property
+    def is_default(self):
+        return (self.name == self.project_defaults['Project']['name'])
+
+    @property
     def defaults(self):
         d = deepcopy(self.user_defaults)
         d.update(deepcopy(self.project_defaults))

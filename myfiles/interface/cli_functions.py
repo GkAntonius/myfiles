@@ -113,6 +113,8 @@ class check_project_config(CLIfunction):
     def __call__(self, args):
         rc = ProjectConfig()
         print(rc)
+        if rc.is_default:
+            return
         if not rc.file_exists:
             rc.write_config_file()
         rc.make_directories()
