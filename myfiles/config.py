@@ -298,7 +298,7 @@ class ProjectConfig(UserConfig):
                 
 
         if not self.topdir.exists():
-            print(f'Warning: top directory does not exist:\n {topdir}')
+            print(f'Warning: top directory does not exist:\n {self.topdir}')
 
         return self.topdir
 
