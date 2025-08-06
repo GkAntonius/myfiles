@@ -3,7 +3,9 @@ from argparse import ArgumentParser
 from textwrap import dedent
 
 from ..config import UserConfig, ProjectConfig
-from ..nodeproject import Project, Node, NodeID
+from ..nodeid import NodeID
+from ..node import Node
+from ..project import Project
 from ..util import ScanResult
 from ..data import DataDirs
 
