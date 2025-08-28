@@ -14,7 +14,6 @@ class Project:
         self.config = config
         self.remote = RemoteHosts()
         self.name = str(config['Project']['name'])
-        self.topdir = config.topdir
 
     def __str__(self):
         S = ''
@@ -34,6 +33,10 @@ class Project:
             S += f'    {p}\n'
         S += n*'=' + '\n'
         return S
+
+    @property
+    def topdir(self):
+        return self.config.topdir
 
     @property
     def local_data(self):
@@ -216,16 +219,27 @@ class Project:
         if mkdir:
             if new.topdir.exists():
                 import warnings
-                warnings.warn('Project already exists: {new.topdir}')
+                warnings.warn(f'Project already exists: {new.topdir}')
 
-            for dirname in (new.topdir, new.local_data, new.production,
+            print(new.topdir)
+            new.topdir.mkdir(exist_ok=True)
+
+            new.config.write_config_file()
+
+            for dirname in (new.local_data, new.production,
                             new.analysis, new.results):
                 print(dirname)
                 dirname.mkdir(exist_ok=True)
 
         if new.config.global_scratch.exists():
-            new.scratch.mkdir(exist_of=True)
+            new.scratch.mkdir(exist_ok=True)
             new.make_scratch_link()
 
         return new
 
+    def make_scratch_link(self):
+        source = self.scratch 
+        dest = self.topdir / 'scratch'
+
+        command_parts = ["ln", "-nsf", str(source), str(dest)]
+        return prompt_user_and_run(command_parts)

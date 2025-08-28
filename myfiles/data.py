@@ -128,6 +128,7 @@ class DataDir:
 
         # GA: Temporarily backtracking to python 3.11 compatible version.
         #for (dirpath, dirnames, filenames) in self.structure_dir.walk():
+        dirpath = None
         for root, dirnames, filenames in os.walk(str(self.structure_dir)):
             dirpath = Path(root)
             for fname in filenames:
@@ -181,6 +182,8 @@ class DataDirs(list):
         if result == ScanResult.no_scan:
             raise Exception('No data directory to scan.')
         else:
+            for datadir in self:
+                print(datadir)
             raise Exception(f'File not found: {filename}')
 
     def get_pseudopotentials(self, *args, **kwargs):

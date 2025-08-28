@@ -306,6 +306,7 @@ class ProjectConfig(UserConfig):
 
         return self.topdir
 
+    # FIXME Move this to project object
     def make_directories(self):
         todo = []
         for directory in (self.topdir, self.local_data, self.production,
@@ -322,14 +323,6 @@ class ProjectConfig(UserConfig):
         prompt_user_confirmation(msg)
         for d in todo:
             d.mkdir(exist_ok=True)
-
-    def make_scratch_link(self):
-        source = self.local_scratch 
-        dest = self.topdir / 'scratch'
-
-        command_parts = ["ln", "-nsf", str(source), str(dest)]
-        return prompt_user_and_run(command_parts)
-
 
 
 class NodeConfig(ProjectConfig):

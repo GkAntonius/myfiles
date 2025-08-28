@@ -114,6 +114,8 @@ class check_project_config(CLIfunction):
         rc = ProjectConfig()
         print(rc)
         if rc.is_default:
+            # FIXME an existing project tree without config file
+            # will never write its config file!
             return
         if not rc.file_exists:
             rc.write_config_file()
