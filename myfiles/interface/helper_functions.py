@@ -21,9 +21,11 @@ def get_structure_dir():
     """Return absolute paths of a structure directory."""
     return DataDirs().get_structure_dir()
 
-def get_structure(filename):
+def get_structure_file(filename):
     """Return absolute paths of a structure."""
-    return DataDirs().get_structure(filename)
+    return DataDirs().get_structure_file(filename)
+
+get_structure = get_structure_file
 
 def get_pseudo_dir(subdir=None, keywords=()):
     """Return absolute paths of a pseudopotential directory."""

@@ -117,7 +117,7 @@ class DataDir:
             raise Exception(f'Directory does not exist: {self.structure_dir}')
         return str(self.structure_dir)
 
-    def get_structure(self, filename) -> (ScanResult, Path):
+    def get_structure_file(self, filename) -> (ScanResult, Path):
         """
         Find the absolute path of a structure that exists.
         """
@@ -174,10 +174,10 @@ class DataDirs(list):
         for datadir in self:
             datadir.pseudo_subdir = subdir
 
-    def get_structure(self, filename):
+    def get_structure_file(self, filename):
         result = ScanResult.no_scan
         for datadir in self:
-            result, filepath = datadir.get_structure(filename)
+            result, filepath = datadir.get_structure_file(filename)
             if result == ScanResult.success:
                 return filepath
         if result == ScanResult.no_scan:
