@@ -23,13 +23,13 @@ class DataDir:
     def structure_dir(self):
         return self.dirname / self.config['Data']['structure']
 
-    def get_pseudo_dir(self, subdir=None, keywords=()):
+    def get_pseudo_dir(self, subdir=None, keywords=('pbe','psp8','sr')):
         """
         Return the absolute path of a pseudopotentials directory that exists.
         Raise an exception if not found.
         """
 
-        # FIXME: A directory may match, but not contain any files (or contain
+        # FIXME: A directory may match, but not contain any files
 
         if subdir is not None:
             path = self.pseudo_dir / subdir
@@ -76,7 +76,7 @@ class DataDir:
 
     def get_pseudopotentials(self, psps:[str],
                              subdir=None,
-                             keywords=(),
+                             keywords=('pbe','psp8','sr'),
                              as_dict=False,
                              basename=False):
         """
@@ -89,7 +89,7 @@ class DataDir:
             return result, {}
 
         pseudos = dict()
-        elements = [os.path.splitext(psp)[0] for psp in psps]
+        elements = [os.path.splitext(str(psp))[0] for psp in psps]
 
         for element in elements:
             search = path.glob(f'{element}.*')
@@ -156,6 +156,7 @@ class DataDir:
 
         return ScanResult.failure, dirpath
 
+
 class DataDirs(list):
     """
     A collection of data directories to search in,
@@ -187,18 +188,28 @@ class DataDirs(list):
             raise Exception(f'File not found: {filename}')
 
     def get_pseudopotentials(self, *args, **kwargs):
+        directories = []
         for datadir in self:
             result, pseudos = datadir.get_pseudopotentials(*args, **kwargs)
             if result == ScanResult.success:
                 return pseudos
+            else:
+                result, path = datadir.get_pseudo_dir(**kwargs)
+                directories.append(datadir.dirname)
+                directories.append(path)
 
         if result == ScanResult.no_scan:
             raise Exception('No data directory to scan.')
         else:
-            #msg = "Pseudopotential file not found.\n"
+            msg = "Pseudopotential file not found.\n"
             #msg += f'Search pattern: {element}.* \n'
-            #msg += f'Search directory: {path} \n'
-            raise Exception(f'Files not found: {args[0]}')
+            msg += f'args: {args} \n'
+            msg += f'kwargs: {kwargs} \n'
+            msg += f'Search directories: \n'
+            for dir in directories:
+                msg += f'{dir} \n'
+            #raise Exception(f'Files not found: {args[0]}')
+            raise Exception(msg)
 
     def get_structure_dir(self):
         for datadir in self:
