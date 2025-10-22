@@ -4,7 +4,6 @@ from pathlib import Path
 class NodeID(list):
     """A sequence of digits identifying a node."""
     sep = '-'
-    ndigits=3
 
     def __init__(self, ids: [int]):
 
@@ -15,11 +14,14 @@ class NodeID(list):
 
         super().__init__(ids)
 
+        # Minimum number of digits for the first id.
+        self.mindigits0=1
+
     def __str__(self):
         S = ''
         if len(self) > 0:
             i0 = self[0]
-            S += f'{i0:0={self.ndigits}}'
+            S += f'{i0:0={self.mindigits0}}'
         if len(self) > 1:
             S += self.sep + self.sep.join(str(i) for i in self[1:])
         return S
@@ -47,13 +49,17 @@ class NodeID(list):
         if n > len(self):
             return self
         cls = type(self)
-        return cls(self[:n])
+        new = cls(self[:n])
+        new.mindigits0 = self.mindigits0
+        return new
 
     def partition(self, n):
         if n > len(self):
             return self, cls([])
         cls = type(self)
-        return cls(self[:n]), cls(self[n:])
+        new1, new2 = cls(self[:n]), cls(self[n:])
+        new1.mindigits0 = self.mindigits0
+        return new1, new2
 
     def last(self, n):
         if n > len(self):
@@ -93,7 +99,10 @@ class NodeID(list):
             ids.extend(list(reversed(ids_p)))
             rest = rest.parent
             last = rest.name
-        return cls(list(reversed(ids)))
+        new = cls(list(reversed(ids)))
+        if str(path).startswith('0'):
+            new.mindigits0 = len(str(path).split(cls.sep)[0])
+        return new
 
     @classmethod
     def from_parent_path(cls, path=None):
@@ -118,7 +127,10 @@ class NodeID(list):
         for tok in basename.split(cls.sep):
             if tok.isdigit():
                 ids.append(int(tok))
-        return cls(ids)
+        new = cls(ids)
+        if basename.startswith('0'):
+            new.mindigits0 = len(basename.split(cls.sep)[0])
+        return new
 
     from_str = read_ids
 

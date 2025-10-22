@@ -43,7 +43,7 @@ get_pseudo = get_pseudopotentials
 def get_production_dir(ids=None):
     """Find a production directory matching some ids."""
     node = Node(ids=ids)
-    return node.find_production_dir(ids)
+    return node.find_production_dir()
 
 find_production_dir = get_production_dir
 find_calc_dir = get_production_dir

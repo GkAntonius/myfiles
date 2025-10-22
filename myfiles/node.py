@@ -55,7 +55,7 @@ class Node:
     @property
     def name(self):
         if self._name == NodeConfig.node_defaults['Node']['name']:
-            self._name = self.find_name()
+            self.find_name()
         return self._name
 
     @name.setter
@@ -69,7 +69,9 @@ class Node:
 
     @property
     def basename(self):
-        return self.ids.trim(1).tag + self.name
+        name = self.name  # First find the name, if undefined,
+                          # which can modify ids format.
+        return self.ids.trim(1).tag + name
 
     # GA: Not sure about this. The name in analysis doesnt need to match
     #     the name in production...
@@ -207,12 +209,17 @@ class Node:
         return found[0]
 
     def find_name(self):
+        """
+        Find the name of the node by looking for a production directory
+        that matches the ids.
+        Side effect: set mindigits0 for ids.
+        """
         production_dir = self.find_production_dir()
         basename = Path(production_dir).name
-        assert basename.startswith(self.ids.tag), f'Unexpected directory name: {basename}'
-        name = basename.split(self.ids.tag)[1]
-        self.name = name
-        return name
+        self.name = self.ids.strip_ids(basename)
+        if basename.startswith('0'):
+            self.ids.mindigits0 = len(basename.split(self.ids.sep)[0])
+        return self.name
 
     def make_analysis_dir(self, verbose=True):
         if verbose:

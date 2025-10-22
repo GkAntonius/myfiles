@@ -209,7 +209,7 @@ class push_global_data(CLIfunctionWithRemote):
 class make_anadir(CLIfunctionWithID):
     """Create a directory in analysis folder to match one in the production folder."""
     def __call__(self, args):
-        node = Node(ids)
+        node = Node(args.ids)
         node.make_analysis_dir(verbose=True)
 
 
