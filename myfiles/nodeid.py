@@ -7,15 +7,23 @@ class NodeID(list):
 
     def __init__(self, ids: [int]):
 
+        # Minimum number of digits for the first id.
+        self.mindigits0 = 1
+
         if isinstance(ids, int):
             ids = [ids]
         elif isinstance(ids, str):
             ids = [int(ids)]
 
-        super().__init__(ids)
+        if len(ids) > 0:
+            i0 = ids[0]
+            if isinstance(i0, str):
+                if i0.startswith('0'):
+                    self.mindigits0 = len(i0)
 
-        # Minimum number of digits for the first id.
-        self.mindigits0=1
+        ids = [int(i) for i in ids]
+
+        super().__init__(ids)
 
     def __str__(self):
         S = ''

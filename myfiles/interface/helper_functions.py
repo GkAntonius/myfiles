@@ -60,8 +60,7 @@ def get_workdir(name, ids=None):
 
     return Path(f'{ids}{ids.sep}{name}')
 
-def get_filename(name, ids=None, ext='', where='.', sep='-'
-        ):
+def get_filename(name, ids=None, ext='', where='.', sep='-'):
     if ids is None:
         pids = NodeID.from_parent_path()
         ids = NodeID.from_path()

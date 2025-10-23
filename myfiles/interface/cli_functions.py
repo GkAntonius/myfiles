@@ -47,7 +47,7 @@ class CLIfunctionWithID(CLIfunction):
 
     def add_parser(self, sub):
         parser = super().add_parser(sub)
-        parser.add_argument('ids', type=int, nargs='+', help='Node ID.')
+        parser.add_argument('ids', type=str, nargs='+', help='Node ID.')
         return parser
 
 class CLIfunctionWithRsync(CLIfunction):
