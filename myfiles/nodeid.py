@@ -1,38 +1,30 @@
 import os
 from pathlib import Path
+from itertools import zip_longest
 
 class NodeID(list):
     """A sequence of digits identifying a node."""
     sep = '-'
 
-    def __init__(self, ids: [int]):
+    def __init__(self, ids: [int | str]):
 
-        # Minimum number of digits for the first id.
-        self.mindigits0 = 1
+        self._mindigits = []
+        self.mindigits_all = 1
 
-        if isinstance(ids, int):
+        if isinstance(ids, int) or isinstance(ids, str):
             ids = [ids]
-        elif isinstance(ids, str):
-            ids = [int(ids)]
 
-        if len(ids) > 0:
-            i0 = ids[0]
-            if isinstance(i0, str):
-                if i0.startswith('0'):
-                    self.mindigits0 = len(i0)
+        self.mindigits = [len(str(i)) for i in ids]
 
-        ids = [int(i) for i in ids]
-
-        super().__init__(ids)
+        super().__init__([int(i) for i in ids])
 
     def __str__(self):
-        S = ''
-        if len(self) > 0:
-            i0 = self[0]
-            S += f'{i0:0={self.mindigits0}}'
-        if len(self) > 1:
-            S += self.sep + self.sep.join(str(i) for i in self[1:])
-        return S
+        bits = []
+        for i, n in zip_longest(self, self.mindigits,
+                                fillvalue=self.mindigits_all):
+            bits.append(f'{i:0={n}}')
+
+        return self.sep.join(bits)
 
     def __eq__(self, other):
         if len(self) != len(other):
@@ -50,15 +42,29 @@ class NodeID(list):
                 return False
         return True
 
-    #def __bool__(self):
-    #    return (len(self) > 0)
+    @property
+    def mindigits(self):
+        n = len(self)
+        if len(self._mindigits) > n:
+            return self._mindigits[:n]
+        else:
+            return self._mindigits
+
+    @mindigits.setter
+    def mindigits(self, value):
+        if isinstance(value, int):
+            self._mindigits = []
+            self.mindigits_all = value
+        else:
+            self._mindigits = list(value)
 
     def trim(self, n):
         if n > len(self):
             return self
         cls = type(self)
         new = cls(self[:n])
-        new.mindigits0 = self.mindigits0
+        new.mindigits = self.mindigits
+        new.mindigits_all = self.mindigits_all
         return new
 
     def partition(self, n):
@@ -66,18 +72,52 @@ class NodeID(list):
             return self, cls([])
         cls = type(self)
         new1, new2 = cls(self[:n]), cls(self[n:])
-        new1.mindigits0 = self.mindigits0
+        new1.mindigits = self.mindigits
+        new1.mindigits_all = self.mindigits_all
+        new2.mindigits_all = self.mindigits_all
+        if len(self.mindigits) > n:
+            new2.mindigits = self.mindigits[n:]
         return new1, new2
 
     def last(self, n):
         if n > len(self):
             return self
         cls = type(self)
-        return cls(self[-n:])
+        new = cls(self[-n:])
+        new.mindigits_all = self.mindigits_all
+        if len(self.mindigits) > n:
+            new.mindigits = self.mindigits[n:]
+        return new
 
     @property
     def tag(self):
         return str(self) + self.sep
+
+    @classmethod
+    def _ids_str_from_basename(cls, fname: str) -> [str]:
+        """Read the ids from a file basename."""
+        basename = os.path.splitext(str(fname))[0]
+        ids = list()
+        for tok in basename.split(cls.sep):
+            if tok.isdigit():
+                ids.append(str(tok))
+        return ids
+
+    @classmethod
+    def _ids_str_from_path(cls, path):
+        """
+        Read the ids from a file path.
+        Extend the indices with each subdirectory.
+        """
+        ids = list()
+        rest = Path(path).expanduser().absolute()
+        last = rest.name
+        while last:
+            ids_p = list(cls._ids_str_from_basename(last))
+            ids.extend(list(reversed(ids_p)))
+            rest = rest.parent
+            last = rest.name
+        return list(reversed(ids))
 
     @classmethod
     def from_path(cls, path=None):
@@ -99,18 +139,8 @@ class NodeID(list):
             except:
                 return cls.from_path('.')
 
-        ids = list()
-        rest = Path(path).expanduser().absolute()
-        last = rest.name
-        while last:
-            ids_p = list(cls.read_ids(last))
-            ids.extend(list(reversed(ids_p)))
-            rest = rest.parent
-            last = rest.name
-        new = cls(list(reversed(ids)))
-        if str(path).startswith('0'):
-            new.mindigits0 = len(str(path).split(cls.sep)[0])
-        return new
+        ids = cls._ids_str_from_path(path)
+        return cls(ids)
 
     @classmethod
     def from_parent_path(cls, path=None):
@@ -134,10 +164,8 @@ class NodeID(list):
         ids = list()
         for tok in basename.split(cls.sep):
             if tok.isdigit():
-                ids.append(int(tok))
+                ids.append(tok)
         new = cls(ids)
-        if basename.startswith('0'):
-            new.mindigits0 = len(basename.split(cls.sep)[0])
         return new
 
     from_str = read_ids

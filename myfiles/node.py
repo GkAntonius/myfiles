@@ -212,13 +212,12 @@ class Node:
         """
         Find the name of the node by looking for a production directory
         that matches the ids.
-        Side effect: set mindigits0 for ids.
+        Side effect: read the ids from the production directory
         """
         production_dir = self.find_production_dir()
         basename = Path(production_dir).name
         self.name = self.ids.strip_ids(basename)
-        if basename.startswith('0'):
-            self.ids.mindigits0 = len(basename.split(self.ids.sep)[0])
+        self.ids = self.ids.from_path(production_dir)
         return self.name
 
     def make_analysis_dir(self, verbose=True):
