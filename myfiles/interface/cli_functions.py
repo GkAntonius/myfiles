@@ -72,7 +72,7 @@ class CLIfunctionWithRsync(CLIfunction):
         return kwargs
 
 
-class CLIfunctionWithRemote(CLIfunctionWithID, CLIfunctionWithRsync):
+class CLIfunctionWithRemote(CLIfunctionWithRsync):
     """Base class for functions that operate on a remote host."""
 
     def add_parser(self, sub):
@@ -160,14 +160,14 @@ class newproj(CLIfunction):
 
 # =========================================================================== #
 
-class pull_remote(CLIfunctionWithRemote, CLIfunctionWithID):
+class pull_remote(CLIfunctionWithID, CLIfunctionWithRemote):
     """Pull files from a remote host."""
     def __call__(self, args):
         proj = Project()
         kwargs = self.get_rsync_kwargs(args)
         proj.pull_production_dir(args.hostname, args.ids, **kwargs)
 
-class push_remote(CLIfunctionWithRemote, CLIfunctionWithID):
+class push_remote(CLIfunctionWithID, CLIfunctionWithRemote):
     """Push files to a remote host."""
     def __call__(self, args):
         proj = Project()

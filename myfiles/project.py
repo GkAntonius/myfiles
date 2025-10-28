@@ -39,6 +39,10 @@ class Project:
         return self.config.topdir
 
     @property
+    def global_data(self):
+        return self.config.global_data
+
+    @property
     def local_data(self):
         return self.config.local_data
 
@@ -197,6 +201,7 @@ class Project:
         source = self.local_data
         dest = self.local_data.relative_to(self.config.home)
 
+        options = self.get_rsync_options(**kwargs)
         command_parts = ["rsync", f"{source}/", f"{hostname}:{dest}"] + options
         return prompt_user_and_run(command_parts)
 
@@ -207,6 +212,7 @@ class Project:
         source = self.global_data
         dest = self.global_data.relative_to(self.config.home)
 
+        options = self.get_rsync_options(**kwargs)
         command_parts = ["rsync", f"{source}/", f"{hostname}:{dest}"] + options
         return prompt_user_and_run(command_parts)
 
