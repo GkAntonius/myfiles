@@ -84,8 +84,12 @@ class CLIfunctionWithRemote(CLIfunctionWithRsync):
 # Functions
 # =========================================================================== #
 
-from .. import UserConfig, ProjectConfig, RemoteHosts
-from .. import Node, Project
+from .config import UserConfig, ProjectConfig, RemoteHosts
+from .nodeid import NodeID
+from .node import Node
+from .project import Project
+from .util import ScanResult
+from .data import DataDirs
 
 # =========================================================================== #
 """

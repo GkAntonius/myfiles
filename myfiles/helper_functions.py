@@ -1,13 +1,11 @@
 from pathlib import Path
-from argparse import ArgumentParser
-from textwrap import dedent
 
-from ..config import UserConfig, ProjectConfig
-from ..nodeid import NodeID
-from ..node import Node
-from ..project import Project
-from ..util import ScanResult
-from ..data import DataDirs
+from .config import UserConfig, ProjectConfig
+from .nodeid import NodeID
+from .node import Node
+from .project import Project
+from .util import ScanResult
+from .data import DataDirs
 
 def get_ids(fname=None, n=None):
     """Scan the current file or path name and return ids."""
