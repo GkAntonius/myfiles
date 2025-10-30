@@ -10,7 +10,7 @@ class Config(dict, abc.ABC):
 
     _config_filename = '.myfilesrc'
 
-    def __init__(self, read=True, path='.', **kwargs):
+    def __init__(self, path='.', read=True, **kwargs):
         super().__init__()
         self.update(self.defaults)
         self.update(kwargs)
@@ -94,6 +94,10 @@ class Config(dict, abc.ABC):
     def filename(self):
         return self.home / self._config_filename
 
+    @property
+    def file_exists(self):
+        return self.filename.exists()
+
     def write_config_file(self, target=None):
         """Will not overwrite an existing file."""
         target = target or self.filename
@@ -138,10 +142,6 @@ class UserConfig(Config):
         return deepcopy(self.user_defaults)
     
     @property
-    def filename(self):
-        return self.home / self._config_filename
-
-    @property
     def projectsdir(self):
         return Path(self['Global']['projects']).expanduser().absolute()
 
@@ -160,10 +160,6 @@ class UserConfig(Config):
     @property
     def global_scratch_data(self):
         return self.global_scratch / self.global_data.relative_to(self.home)
-
-    @property
-    def file_exists(self):
-        return self.filename.exists()
 
     def make_global_dirs(self):
         todo = []
@@ -281,12 +277,8 @@ class ProjectConfig(UserConfig):
         target = topdir / self._config_filename
         super().write_config_file(target)
 
-    @property
-    def name_unknown(self):
-        return (self['Project']['name'] == self.defaults['Project']['name'])
-
     def find_topdir(self):
-        if self.name_unknown:
+        if self.is_default:
             try:
                 p = Path().absolute().relative_to(self.projectsdir)
                 name = p.parts[0]
@@ -306,23 +298,12 @@ class ProjectConfig(UserConfig):
 
         return self.topdir
 
-    # FIXME Move this to project object
-    def make_directories(self):
-        todo = []
-        for directory in (self.topdir, self.local_data, self.production,
-                        self.analysis, self.results, self.local_scratch,
-                        self.scratch_production):
-            if not directory.exists():
-                todo.append(directory)
-
-        if not todo:
-            return
-
-        msg = 'The following directories will be created:\n'
-        msg += '\n'.join([str(d) for d in todo])
-        prompt_user_confirmation(msg)
-        for d in todo:
-            d.mkdir(exist_ok=True)
+    def path_is_valid_project_topdir(self, path=None):
+        if path is None:
+            path = Path()
+        else:
+            path = Path(path)
+        return (path.parent == self.projectsdir)
 
 
 class NodeConfig(ProjectConfig):

@@ -42,3 +42,37 @@ def prompt_user_and_run(command_parts):
             #if result.returncode != 0:
             #    print("Command failed.")
         return result
+
+def rsync_level(n: int):
+    """
+    Get rsync arguments to exclude directories past a certain depts.
+    A level of zero means only the files in the specified directory.
+    A level of one means include subdirectories, and so on.
+    """
+    arguments = []
+    if n < 0 or n > 10:
+        return arguments
+
+    arguments.append("--exclude=" + (n+1)*"*/")
+    return arguments
+    
+def get_rsync_options(level=-1, files_only=False, with_filter=True,
+                      dry_run=False, **kwargs):
+
+    arguments = ['-avh']
+    if with_filter:
+        arguments.append('-F')
+
+    if dry_run:
+        arguments.append('-n')
+
+    if files_only:
+        level=1
+    arguments.extend(rsync_level(level))
+
+    return arguments
+
+def get_rsync_command_parts(source, dest, **kwargs):
+    options = get_rsync_options(**kwargs)
+    command_parts = ["rsync", source, dest] + options
+    return command_parts

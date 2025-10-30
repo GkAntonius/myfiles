@@ -3,7 +3,8 @@ import shutil
 from .config import ProjectConfig, RemoteHosts
 from .nodeid import NodeID
 from .node import Node
-from .util import prompt_user_and_run, run_command, prompt_user_confirmation
+from .util import (prompt_user_and_run, run_command, prompt_user_confirmation,
+                   get_rsync_command_parts)
 
 __all__ = ['Project']
 
@@ -62,6 +63,14 @@ class Project:
     def scratch(self):
         return self.config.local_scratch
 
+    @property
+    def scratch_production(self):
+        return self.config.scratch_production
+
+    @property
+    def scratch_analysis(self):
+        return self.config.scratch_analysis
+
     def iter_dir_nodes(self, directory):
         """
         Look for nodes in a directory.
@@ -89,41 +98,22 @@ class Project:
                 continue
             yield node
 
-    @staticmethod
-    def _rsync_level(n: int):
-        """
-        Get rsync arguments to exclude directories past a certain depts.
-        A level of zero means only the files in the specified directory.
-        A level of one means include subdirectories, and so on.
-        """
-        arguments = []
-        if n < 0 or n > 10:
-            return arguments
+    def make_directories(self):
+        todo = []
+        for directory in (self.topdir, self.local_data, self.production,
+                        self.analysis, self.results, self.local_scratch,
+                        self.scratch_production):
+            if not directory.exists():
+                todo.append(directory)
 
-        arguments.append("--exclude=" + (n+1)*"*/")
-        return arguments
-        
-    def get_rsync_options(self,
-                          level=1,
-                          files_only=False,
-                          with_filter=True,
-                          dry_run=False,
-                          **kwargs):
-        """
-        """
-        arguments = ['-avh']
-        if with_filter:
-            arguments.append('-F')
+        if not todo:
+            return
 
-        if dry_run:
-            arguments.append('-n')
-
-        if files_only:
-            level=1
-        arguments.extend(self._rsync_level(level))
-
-        return arguments
-        
+        msg = 'The following directories will be created:\n'
+        msg += '\n'.join([str(d) for d in todo])
+        prompt_user_confirmation(msg)
+        for d in todo:
+            d.mkdir(exist_ok=True)
 
     def pull_production_dir(self, hostname, ids, **kwargs):
         if hostname not in self.remote:
@@ -135,12 +125,11 @@ class Project:
         loc_prod = self.production.relative_to(Path().absolute())
         source = f"{hostname}:{rel_prod}/{tag}*"
         dest = f"{loc_prod}/"
-
-        options = self.get_rsync_options(**kwargs)
-        command_parts = ["rsync", source, dest] + options
-        results = prompt_user_and_run(command_parts)
+        command_parts = get_rsync_command_parts(source, dest, **kwargs)
+        return prompt_user_and_run(command_parts)
 
     def push_production_dir(self, hostname, ids, **kwargs):
+
         if hostname not in self.remote:
             raise Exception(f'Unknown host: {hostname}')
 
@@ -151,39 +140,33 @@ class Project:
         tag = node.ids.tag
         rel_prod = self.production.relative_to(self.config.home)
         loc_prod = self.production.relative_to(Path().absolute())
-
-        options = self.get_rsync_options(**kwargs)
-        command_parts = ["rsync",
-                        f"{loc_prod}/{tag}*",
-                        f"{hostname}:{rel_prod}/",
-                        ] + options
-        result = prompt_user_and_run(command_parts)
+        source = f"{loc_prod}/{tag}*"
+        dest = f"{hostname}:{rel_prod}/"
+        command_parts = get_rsync_command_parts(source, dest, **kwargs)
+        return prompt_user_and_run(command_parts)
 
     def pull_scratch(self, ids, **kwargs):
-
         node = Node(ids)
-
         tag = str(node.ids.tag)
-        source = self.scratch / self.production.relative_to(self.topdir)
-        dest = self.production
-
-        options = self.get_rsync_options(**kwargs)
-        command_parts = ["rsync", f"{source}/{tag}*", f"{dest}/"] + options
-        results = prompt_user_and_run(command_parts)
+        sourcedir = self.scratch / self.production.relative_to(self.topdir)
+        destdir = self.production
+        source = f"{sourcedir}/{tag}*"
+        dest = f"{destdir}/"
+        command_parts = get_rsync_command_parts(source, dest, **kwargs)
+        return prompt_user_and_run(command_parts)
 
     def push_scratch(self, ids, **kwargs):
-
         node = Node(ids)
         if not node:
             raise Exception(f'Node not found: {ids}')
 
         tag = str(node.ids.tag)
-        source = self.production
-        dest = self.scratch / self.production.relative_to(self.topdir)
-
-        options = self.get_rsync_options(**kwargs)
-        command_parts = ["rsync", f"{source}/{tag}*", f"{dest}/"] + options
-        results = prompt_user_and_run(command_parts)
+        sourcedir = self.production
+        destdir = self.scratch / self.production.relative_to(self.topdir)
+        source = f"{sourcedir}/{tag}*"
+        dest = f"{destdir}/"
+        command_parts = get_rsync_command_parts(source, dest, **kwargs)
+        return prompt_user_and_run(command_parts)
 
     def copy_analysis_files_to_results(self, *args, **kwargs):
         """
@@ -198,22 +181,22 @@ class Project:
         if hostname not in self.remote:
             raise Exception(f'Unknown host: {hostname}')
 
-        source = self.local_data
-        dest = self.local_data.relative_to(self.config.home)
-
-        options = self.get_rsync_options(**kwargs)
-        command_parts = ["rsync", f"{source}/", f"{hostname}:{dest}"] + options
+        sourcedir = self.local_data
+        destdir = self.local_data.relative_to(self.config.home)
+        source = f"{sourcedir}/"
+        dest = f"{hostname}:{destdir}"
+        command_parts = get_rsync_command_parts(source, dest, **kwargs)
         return prompt_user_and_run(command_parts)
 
     def push_global_data(self, hostname, **kwargs):
         if hostname not in self.remote:
             raise Exception(f'Unknown host: {hostname}')
 
-        source = self.global_data
-        dest = self.global_data.relative_to(self.config.home)
-
-        options = self.get_rsync_options(**kwargs)
-        command_parts = ["rsync", f"{source}/", f"{hostname}:{dest}"] + options
+        sourcedir = self.global_data
+        destdir = self.global_data.relative_to(self.config.home)
+        source = f"{sourcedir}/"
+        dest = f"{hostname}:{destdir}"
+        command_parts = get_rsync_command_parts(source, dest, **kwargs)
         return prompt_user_and_run(command_parts)
 
     @classmethod
@@ -223,13 +206,12 @@ class Project:
         new = cls(config=config)
 
         if mkdir:
-            if new.topdir.exists():
+            if new.topdir.exists() and new.config.file_exists():
                 import warnings
                 warnings.warn(f'Project already exists: {new.topdir}')
 
             print(new.topdir)
             new.topdir.mkdir(exist_ok=True)
-
             new.config.write_config_file()
 
             for dirname in (new.local_data, new.production,
@@ -246,6 +228,5 @@ class Project:
     def make_scratch_link(self):
         source = self.scratch 
         dest = self.topdir / 'scratch'
-
         command_parts = ["ln", "-nsf", str(source), str(dest)]
         return prompt_user_and_run(command_parts)

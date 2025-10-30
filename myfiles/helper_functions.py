@@ -58,7 +58,9 @@ def get_workdir(name, ids=None):
 
     return Path(f'{ids}{ids.sep}{name}')
 
-def get_filename(name, ids=None, ext='', where='.', sep='-'):
+make_workdir = get_workdir
+
+def get_filename(name, ids=None, ext='', where='.'):
     if ids is None:
         pids = NodeID.from_parent_path()
         ids = NodeID.from_path()
@@ -71,7 +73,7 @@ def get_filename(name, ids=None, ext='', where='.', sep='-'):
     if ext:
         basename += '.' + ext.lstrip('.')
 
-    filename = f'{ids}{ids.sep}{basename}'
+    filename = f'{ids.tag}{basename}'
     return Path(where) / filename
 
 make_filename = get_filename

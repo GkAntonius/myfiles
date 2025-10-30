@@ -117,13 +117,11 @@ class check_project_config(CLIfunction):
     def __call__(self, args):
         rc = ProjectConfig()
         print(rc)
-        if rc.is_default:
-            # FIXME an existing project tree without config file
-            # will never write its config file!
-            return
         if not rc.file_exists:
+            if rc.is_default:
+                return
             rc.write_config_file()
-        rc.make_directories()
+        #rc.make_directories()
 
 class check_config(CLIfunction):
     """Print out configuration."""
