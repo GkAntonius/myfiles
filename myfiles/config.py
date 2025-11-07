@@ -101,9 +101,9 @@ class Config(dict, abc.ABC):
     def write_config_file(self, target=None):
         """Will not overwrite an existing file."""
         target = target or self.filename
-        if not target.exists():
-            answer = input(f"File '{target}' does not exist. \n"
-                           "Do you want to write a new one? [y/N]: ")
+        if target.exists():
+            answer = input(f"File '{target}' already exists. \n"
+                           "Do you want to overwrite it? [y/N]: ")
     
             if answer.lower().startswith('y'):
                 self.write(str(target))
@@ -111,9 +111,10 @@ class Config(dict, abc.ABC):
                 return self
             else:
                 print(f"No file written.")
+                return self
 
+        self.write(str(target))
         return self
-
 
 class UserConfig(Config):
 

@@ -147,18 +147,19 @@ class check_node(CLIfunctionWithID):
         else:
             print(node.ids)
 
-class newproj(CLIfunction):
+class init(CLIfunction):
     """
     Create a new project, with directories and configuration files.
     Will not overwrite an existing project.
     """
     def add_parser(self, sub):
         parser = super().add_parser(sub)
-        parser.add_argument('name', type=str, help='Project name')
+        parser.add_argument('name_or_path', type=str,
+                            help='Project name or path.')
         return parser
 
     def __call__(self, args):
-        return Project.new_project(args.name)
+        return Project.new_project(args.name_or_path)
 
 # =========================================================================== #
 

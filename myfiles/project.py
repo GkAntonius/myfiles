@@ -200,13 +200,27 @@ class Project:
         return prompt_user_and_run(command_parts)
 
     @classmethod
-    def new_project(cls, name, mkdir=True):
+    def new_project(cls, name_or_path, mkdir=True):
         config = ProjectConfig(path=Path('~'))
-        config.name = name
+
+        p = Path(name_or_path)
+        prel = p.absolute().relative_to(config.projectsdir)
+
+        if p.name == name_or_path:
+            config.name = name
+
+        elif (not p.absolute().is_relative_to(config.projectsdir)
+              or (prel.name != str(prel))):
+            raise Exception(
+                'Requested path for new project must be in the Projects '
+                'directory: ' + str(config.projectsdir))
+        else:
+            config.name = prel.name
+
         new = cls(config=config)
 
         if mkdir:
-            if new.topdir.exists() and new.config.file_exists():
+            if new.topdir.exists() and new.config.file_exists:
                 import warnings
                 warnings.warn(f'Project already exists: {new.topdir}')
 
@@ -221,12 +235,15 @@ class Project:
 
         if new.config.global_scratch.exists():
             new.scratch.mkdir(exist_ok=True)
-            new.make_scratch_link()
+            new.make_scratch_link(prompt=False)
 
         return new
 
-    def make_scratch_link(self):
+    def make_scratch_link(self, prompt=True):
         source = self.scratch 
         dest = self.topdir / 'scratch'
         command_parts = ["ln", "-nsf", str(source), str(dest)]
-        return prompt_user_and_run(command_parts)
+        if prompt:
+            return prompt_user_and_run(command_parts)
+        else:
+            return run_command(command_parts)
