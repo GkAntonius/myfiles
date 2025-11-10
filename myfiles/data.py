@@ -194,7 +194,8 @@ class DataDirs(list):
             if result == ScanResult.success:
                 return pseudos
             else:
-                result, path = datadir.get_pseudo_dir(**kwargs)
+                result, path = datadir.get_pseudo_dir(
+                  subdir=kwargs.get('subdir'), keywords=kwargs.get('keywords'))
                 directories.append(datadir.dirname)
                 directories.append(path)
 
