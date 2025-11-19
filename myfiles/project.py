@@ -207,7 +207,7 @@ class Project:
         prel = p.absolute().relative_to(config.projectsdir)
 
         if p.name == name_or_path:
-            config.name = name
+            config.name = p.name
 
         elif (not p.absolute().is_relative_to(config.projectsdir)
               or (prel.name != str(prel))):
