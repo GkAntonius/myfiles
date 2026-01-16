@@ -23,90 +23,119 @@ class DataDir:
     def structure_dir(self):
         return self.dirname / self.config['Data']['structure']
 
-    def get_pseudo_dir(self, subdir=None, keywords=('pbe','psp8','sr')):
+    def get_pseudo_dirs(self, keywords=('pbe','psp8','sr')):
         """
-        Return the absolute path of a pseudopotentials directory that exists.
-        Raise an exception if not found.
+        Return a list of pseudopotential directories that exist
+        and whose name contain some keywords.
         """
 
         # FIXME: A directory may match, but not contain any files
 
-        if subdir is not None:
-            path = self.pseudo_dir / subdir
-        elif not keywords:
-            path = self.pseudo_dir
-        else:
-            directories = []
-            counts = []
-            # GA: Temporarily backtracking to python 3.11 compatible version.
-            #for (dirpath, dirnames, filenames) in self.pseudo_dir.walk():
-            for root, dirnames, filenames in os.walk(str(self.pseudo_dir)):
-                dirpath = Path(root)
-                if not dirnames:
-                    continue
-                for dirname in dirnames:
-                    n = 0
-                    for kw in keywords:
-                        if kw.lower() in dirname.lower():
-                            n += 1
-                    directories.append(dirpath / dirname)
-                    counts.append(n)
+        matching_paths = []
+        if not keywords:
+            if self.pseudo_dir.exists():
+                matching_paths.append(self.pseudo_dir.absolute())
+            return matching_paths
 
-            if not directories:
-                return ScanResult.failure, self.pseudo_dir
+        directories = []
+        counts = []
+        # GA: Temporarily backtracking to python 3.11 compatible version.
+        #for (dirpath, dirnames, filenames) in self.pseudo_dir.walk():
+        for root, dirnames, filenames in os.walk(str(self.pseudo_dir)):
+            dirpath = Path(root)
+            if not dirnames:
+                continue
+            for dirname in dirnames:
+                n = 0
+                for kw in keywords:
+                    if kw.lower() in dirname.lower():
+                        n += 1
+                directories.append(dirpath / dirname)
+                counts.append(n)
 
-            nmax = max(counts)
-            if nmax < len(keywords):
-                print(nmax, len(keywords))
-                #raise Exception('Did not find pseudo directory matching keywords.')
-                return ScanResult.failure, ''
+        if not directories:
+            return matching_paths
 
-            for dirpath, n in zip(directories, counts):
-                if n == nmax:
-                    path = dirpath
-                    break
+        nmax = max(counts)
+        #if nmax < len(keywords):
+        #    print(nmax, len(keywords))
+        #    #raise Exception('Did not find pseudo directory matching keywords.')
+        #    return matching_paths
+
+        for dirpath, n in zip(directories, counts):
+            if n == nmax:
+                matching_paths.append(dirpath.absolute())
+                #path = dirpath
+                #break
 
         #subdir = subdir or self.pseudo_subdir
         #path = self.pseudo_dir / subdir
-        if not path.exists():
-            #raise Exception(f'Directory not found: {path}')
-            return ScanResult.failure, ''
+        #if not path.exists():
+        #    #raise Exception(f'Directory not found: {path}')
+        #    return ScanResult.failure, ''
 
-        return ScanResult.success, path.absolute()
+        return matching_paths
+
+    def get_pseudo_dir(self, keywords=('pbe','psp8','sr')):
+        dirs = self.get_pseudo_dirs(keywords=keywords)
+        if not dirs:
+            raise Exception('Could not find pseudopotential directory '
+                            'with keywords: {keywords}')
+        return dirs[0]
 
     def get_pseudopotentials(self, psps:[str],
-                             subdir=None,
                              keywords=('pbe','psp8','sr'),
+                             path=None,
                              as_dict=False,
-                             basename=False):
+                             basename=False) -> ([str], [ScanResult]):
         """
-        Return the absolute path of a list of pseudopotentials files
-        that exist. Raise an exception if not found.
+        Return a list or dictionary of pseudopotential files.
         """
-        # FIXME: Should scan several matching directories.
-        result, path = self.get_pseudo_dir(subdir=subdir, keywords=keywords)
-        if result != ScanResult.success:
-            return result, {}
 
-        pseudos = dict()
+        if path is None:
+            paths = self.get_pseudo_dirs(keywords=keywords)
+        elif isinstance(path, (str, Path)):
+            paths = [Path(path).absolute()]
+        elif '__iter__' in dir(path):
+            paths = [Path(p).absolute() for p in path]
+        else:
+            try:
+                paths = [Path(path).absolute()]
+            except:
+                raise Exception('Invalid type for path: {}'.format(type(path)))
+
+        N = len(psps)
         elements = [os.path.splitext(str(psp))[0] for psp in psps]
+        pseudos = dict()
+        results = []
 
         for element in elements:
-            search = path.glob(f'{element}.*')
-            try:
-                filepath = next(search)
-            except StopIteration:
-                return ScanResult.failure, {}
+            fname = ''
+            res = ScanResult.failure
 
-            if basename:
-                pseudos[element] = filepath.name
-            else:
-                pseudos[element] = str(filepath.absolute())
+            for path in paths:
+                search = path.glob(f'{element}.*')
+                try:
+                    filepath = next(search)
+                except StopIteration:
+                    continue
+
+                if basename:
+                    fname = filepath.name
+                    res = ScanResult.success
+                    break
+                else:
+                    fname = str(filepath.absolute())
+                    res = ScanResult.success
+                    break
+
+            pseudos[element] = fname
+            results.append(res)
 
         if not as_dict:
             pseudos = list(pseudos.values())
 
-        return ScanResult.success, pseudos
+        return pseudos, results
 
     def get_structure_dir(self):
         """
@@ -187,30 +216,69 @@ class DataDirs(list):
                 print(datadir)
             raise Exception(f'File not found: {filename}')
 
-    def get_pseudopotentials(self, *args, **kwargs):
-        directories = []
+    def get_pseudo_dirs(self, keywords=('pbe','psp8','sr')):
+        dirs = []
         for datadir in self:
-            result, pseudos = datadir.get_pseudopotentials(*args, **kwargs)
-            if result == ScanResult.success:
-                return pseudos
-            else:
-                result, path = datadir.get_pseudo_dir(
-                  subdir=kwargs.get('subdir'), keywords=kwargs.get('keywords'))
-                directories.append(datadir.dirname)
-                directories.append(path)
+            dirs.extend(datadir.get_pseudo_dirs(keywords=keywords))
+        return dirs
 
-        if result == ScanResult.no_scan:
-            raise Exception('No data directory to scan.')
-        else:
+    def get_pseudo_dir(self, keywords=('pbe','psp8','sr')):
+        dirs = self.get_pseudo_dirs(keywords=keywords)
+        if not dirs:
+            raise Exception('Could not find pseudopotential directory '
+                            'with keywords: {keywords}')
+        return dirs[0]
+
+    def get_pseudopotentials(self, psps:[str],
+                             keywords=('pbe','psp8','sr'),
+                             path=None,
+                             as_dict=False,
+                             basename=False) -> [str]:
+
+        N = len(psps)
+        elements = [os.path.splitext(str(psp))[0] for psp in psps]
+        pseudos = dict()
+        results = N * [ScanResult.failure]
+
+        for datadir in self:
+            ps, res = datadir.get_pseudopotentials(
+                psps=psps, keywords=keywords, path=path,
+                as_dict=True, basename=basename)
+
+            for i, el in enumerate(elements):
+                if (results[i] == ScanResult.failure
+                    and res[i] == ScanResult.success):
+
+                    pseudos[el] = ps[el]
+                    results[i] = ScanResult.success
+
+            if all([r == ScanResult.success for r in results]):
+                break
+
+        if any([r == ScanResult.failure for r in results]):
+
+            # Get some info for debugging
+            if path is not None:
+                if isinstance(path, (str, Path)):
+                    directories = [Path(path).absolute()]
+                if '__iter__' in dir(path):
+                    directories = [Path(p).absolute() for p in path]
+            else:
+                directories = self.get_pseudo_dirs(keywords=keywords)
+            directories = [str(d) for d in directories]
+
             msg = "Pseudopotential file not found.\n"
-            #msg += f'Search pattern: {element}.* \n'
-            msg += f'args: {args} \n'
-            msg += f'kwargs: {kwargs} \n'
+            msg += f'psps = {psps} \n'
+            msg += f'keywords = {keywords} \n'
             msg += f'Search directories: \n'
-            for dir in directories:
-                msg += f'{dir} \n'
-            #raise Exception(f'Files not found: {args[0]}')
+            for d in directories:
+                msg += f'{d} \n'
             raise Exception(msg)
+
+        if not as_dict:
+            pseudos = list(pseudos.values())
+
+        return pseudos
 
     def get_structure_dir(self):
         for datadir in self:
@@ -220,17 +288,17 @@ class DataDirs(list):
                 continue
         raise Exception(f'File not found: {filename}')
 
-    def get_pseudo_dir(self, *args, **kwargs):
-        result = ScanResult.no_scan
-        for datadir in self:
-            result, path = datadir.get_pseudo_dir(*args, **kwargs)
-            if result == ScanResult.success:
-                return path
+    #def get_pseudo_dir(self, *args, **kwargs):
+    #    result = ScanResult.no_scan
+    #    for datadir in self:
+    #        result, path = datadir.get_pseudo_dir(*args, **kwargs)
+    #        if result == ScanResult.success:
+    #            return path
 
-        if result == ScanResult.no_scan:
-            raise Exception('No data directory to scan.')
-        else:
-            raise Exception(f'Directory not found: {args}')
+    #    if result == ScanResult.no_scan:
+    #        raise Exception('No data directory to scan.')
+    #    else:
+    #        raise Exception(f'Directory not found: {args}')
 
     def get_datafile(self, filename):
         result = ScanResult.no_scan
