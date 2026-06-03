@@ -1,3 +1,24 @@
+"""
+Command line interface functions
+
+
+TODO
+
+- function 'init' should set up the machine
+- function 'project' should create a new project or list information.
+- function 'node' to create a new node or list directories and files of a node.
+- function 'info' should give information on the configuration
+
+- function 'run' to execute a node script from its production directory.
+- function 'analyze' to execute a node script from its analysis directory.
+- function 'store' or 'stage' to store node results into the Results directory.
+
+- Eventually, we want to run some commands without having to provide node id.
+  For that, we would rely on the registered status of a node.
+  And for that, we would need to store a database of the nodes.
+
+
+"""
 from abc import abstractmethod, ABC
 from argparse import ArgumentParser, Namespace
 
@@ -147,6 +168,20 @@ class check_node(CLIfunctionWithID):
         else:
             print(node.ids)
 
+class nodes(CLIfunction):
+    """Display list of nodes."""
+    def __call__(self, args):
+        proj = Project()
+        proj.read_database()
+        print(proj.node_database) 
+    
+class update(CLIfunction):
+    """Display list of nodes."""
+    def __call__(self, args):
+        proj = Project()
+        proj.read_database()
+        print(proj.node_database) 
+    
 class init(CLIfunction):
     """
     Create a new project, with directories and configuration files.

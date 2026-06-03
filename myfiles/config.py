@@ -162,6 +162,10 @@ class UserConfig(Config):
     def global_scratch_data(self):
         return self.global_scratch / self.global_data.relative_to(self.home)
 
+    @property
+    def node_database_fname(self):
+        return self.topdir / '.nodes.json'
+
     def make_global_dirs(self):
         todo = []
         for directory in (self.projectsdir,

@@ -1,15 +1,17 @@
+import enum
 from pathlib import Path
 import shutil
 from .config import UserConfig, ProjectConfig, NodeConfig, RemoteHosts
 from .nodeid import NodeID
 from .util import prompt_user_and_run
+import json
 import subprocess
 
 __all__ = ['Node']
 
 class Node:
     """
-    A node represents a calculation that we perform and analyse,
+    A node represents a calculation that we run and analyse,
     which is identified by a NodeID and a name.
     Several directories may share the node information, in particular:
     - A production directory
@@ -47,6 +49,8 @@ class Node:
 
         self.results_directories = []
         self.results_files = []
+
+        self.status = NodeStatus.Initialized
 
         #if not self.ids:
         #    raise Exception('Node has no id.')
@@ -201,7 +205,7 @@ class Node:
                 found.append(str(path))
 
         if not found:
-            S = f'Did not find any production directory matching: {ids}\n'
+            S = f'Did not find any production directory matching: {self.ids}\n'
             S += f'Project production directory: {self.project.production}\n'
             S += f'Node production directory: {self.production_directories}\n'
             raise Exception(S)
@@ -234,6 +238,45 @@ class Node:
         """
         pass
 
+    _save_attr = (
+            'production_directories',
+            'production_files',
+            'analysis_directories'
+            'analysis_files'
+            'results_directories'
+            'results_files'
+        )
+
+    def to_dict(self):
+        # Configuration should not be stored.
+        D = dict()
+        D['ids'] = str(self.ids)
+        D['project'] = self.project.to_dict()
+
+        for name in self._save_attr:
+            D.update(getattr(self, name))
+
+        D['status'] = self.status.value
+        return D
+
+    @classmethod
+    def from_dict(cls, D):
+        from .project import Project
+        ids = cls(D.pop('ids'))
+        project = Project.from_dict(D.pop('project'))
+        new = cls(ids, project=project))
+        for name in self._save_attr:
+            setattr(name, D.get(name))
+        new.status = NodeStatus(D['status'])
+        return new
+
+    def get_database_entry(self):
+        return NotImplemented
+
+    @classmethod
+    def from_database_entry(cls):
+        return NotImplemented
+
     #def find_subdir(self, where):
     #    """
     #    Use own ids, and possibly name to search for a subdirectory directory
@@ -241,3 +284,72 @@ class Node:
     #    """ 
     #    pass
 
+
+class NodeStatus(enum.Enum):
+    Initialized = 0
+    Ready = 1
+    Production = 2
+    Scratch = 3
+    Analyzed = 5
+    Staged = 6
+    Updated = 7
+
+class NodeDatabase(list):
+    """A list of dictionaries"""
+
+    def write(self, fname)
+        L = []
+        for node in self:
+            L.append(node.to_dict())
+
+        with open(fname, 'w') as fn:
+            json.dump(L, fn)
+
+    def read(self, fname):
+        self.clear()
+        L = []
+        with open(fname, 'r') as fn:
+            L.extend(list(json.read(fn)))
+
+        for nd in L:
+            self.append(Node.from_dict(nd))
+
+    def get_table_string(self):
+
+        def item_or_numitem(L: list, name='items'):
+            if not L:
+                return ''
+            if len(L) == 1:
+                return str(L[0])
+            else:
+                return ('{len(L)} {name}'
+
+        def files_or_dirs(files: list, dirs: list):
+            if not files and not dirs:
+                return ''
+            if files and dirs:
+                return item_or_numitem(dirs, 'directories')
+            elif files:
+                return item_or_numitem(files, 'files')
+
+        from prettytable import PrettyTable, TableStyle
+        table = PrettyTable()
+        table.field_names = ('ID', 'Production', 'Analysis', 'Results', 'Status')
+        for node in self:
+            row = [str(node.ids),
+                   str(node.status),
+                   files_or_dirs(node.production_files,
+                                 node.production_directories),
+                   files_or_dirs(node.analysis_files,
+                                 node.analysis_directories),
+                   files_or_dirs(node.results_directories,
+                                 node.results_files),
+                   ]
+            table.add_row(row)
+
+        # Could also keep table as class attribute.
+        table.set_style(TableStyle.DOUBLE_BORDER)
+        return table.get_string()
+
+    def __str__(self):
+        return self.get_table()

@@ -2,7 +2,7 @@ from pathlib import Path
 import shutil
 from .config import ProjectConfig, RemoteHosts
 from .nodeid import NodeID
-from .node import Node
+from .node import Node, NodeDatabase
 from .util import (prompt_user_and_run, run_command, prompt_user_confirmation,
                    get_rsync_command_parts)
 
@@ -15,6 +15,7 @@ class Project:
         self.config = config
         self.remote = RemoteHosts()
         self.name = str(config['Project']['name'])
+        self.node_database = NodeDatabase()
 
     def __str__(self):
         S = ''
@@ -70,6 +71,15 @@ class Project:
     @property
     def scratch_analysis(self):
         return self.config.scratch_analysis
+
+    def write_database(self):
+        # Overwrite existing database
+        fname = str(self.config.node_database_fname)
+        self.node_database.write(fname)
+
+    def read_database(self):
+        if self.config.node_database_fname.exists():
+            self.node_database.read(str(self.config.node_database_fname))
 
     def iter_dir_nodes(self, directory):
         """
